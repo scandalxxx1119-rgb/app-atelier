@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
 
 type App = {
   id: string;
@@ -25,55 +26,52 @@ export default function HomePage() {
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedTag, setSelectedTag] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sort, setSort] = useState("created_at");
-  const [allTags, setAllTags] = useState<string[]>([]);
 
   useEffect(() => {
     setLoading(true);
-    let query = supabase
-      .from("aa_apps")
-      .select("*, aa_profiles(username)")
-      .order(sort, { ascending: false });
-
     supabase
       .from("aa_apps")
-      .select("tags")
+      .select("*, aa_profiles(username)")
+      .order(sort, { ascending: false })
       .then(({ data }) => {
-        const tags = new Set<string>();
-        data?.forEach((row) => row.tags?.forEach((t: string) => tags.add(t)));
-        setAllTags(Array.from(tags));
+        let filtered = (data as App[]) ?? [];
+        if (search) {
+          const q = search.toLowerCase();
+          filtered = filtered.filter(
+            (a) =>
+              a.name.toLowerCase().includes(q) ||
+              a.tagline.toLowerCase().includes(q)
+          );
+        }
+        if (selectedTags.length > 0) {
+          filtered = filtered.filter((a) =>
+            selectedTags.every((t) => a.tags?.includes(t))
+          );
+        }
+        setApps(filtered);
+        setLoading(false);
       });
+  }, [sort, search, selectedTags]);
 
-    query.then(({ data }) => {
-      let filtered = (data as App[]) ?? [];
-      if (search) {
-        const q = search.toLowerCase();
-        filtered = filtered.filter(
-          (a) =>
-            a.name.toLowerCase().includes(q) ||
-            a.tagline.toLowerCase().includes(q)
-        );
-      }
-      if (selectedTag) {
-        filtered = filtered.filter((a) => a.tags?.includes(selectedTag));
-      }
-      setApps(filtered);
-      setLoading(false);
-    });
-  }, [sort, search, selectedTag]);
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       {/* Hero */}
-      <div className="mb-10">
+      <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">App Atelier</h1>
         <p className="text-zinc-500 dark:text-zinc-400">
           個人開発者が作ったアプリを発見・応援しよう
         </p>
       </div>
 
-      {/* Search + Filter */}
+      {/* Search + Sort */}
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
         <input
           type="text"
@@ -99,49 +97,70 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Tag filter */}
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          <button
-            onClick={() => setSelectedTag("")}
-            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-              !selectedTag
-                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-            }`}
-          >
-            すべて
-          </button>
-          {allTags.map((tag) => (
-            <button
-              key={tag}
-              onClick={() => setSelectedTag(tag === selectedTag ? "" : tag)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                selectedTag === tag
-                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
-                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-              }`}
-            >
-              {tag}
-            </button>
-          ))}
+      {/* Tag filters */}
+      <div className="mb-8 space-y-3">
+        {/* Platform */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-zinc-400 w-20 flex-shrink-0">プラットフォーム</span>
+          <div className="flex flex-wrap gap-1.5">
+            {PLATFORM_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  selectedTags.includes(tag)
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Category */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs text-zinc-400 w-20 flex-shrink-0">カテゴリ</span>
+          <div className="flex flex-wrap gap-1.5">
+            {CATEGORY_TAGS.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                  selectedTags.includes(tag)
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Clear */}
+        {selectedTags.length > 0 && (
+          <button
+            onClick={() => setSelectedTags([])}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 underline"
+          >
+            フィルターをクリア（{selectedTags.length}個選択中）
+          </button>
+        )}
+      </div>
 
       {/* App grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div
-              key={i}
-              className="h-44 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse"
-            />
+            <div key={i} className="h-44 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
           ))}
         </div>
       ) : apps.length === 0 ? (
         <div className="text-center py-20 text-zinc-400">
           <p className="text-lg mb-4">
-            {search || selectedTag
+            {search || selectedTags.length > 0
               ? "該当するアプリが見つかりません"
               : "まだアプリが投稿されていません"}
           </p>
@@ -196,6 +215,11 @@ export default function HomePage() {
                       {tag}
                     </span>
                   ))}
+                  {app.tags.length > 3 && (
+                    <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">
+                      +{app.tags.length - 3}
+                    </span>
+                  )}
                 </div>
               )}
             </Link>

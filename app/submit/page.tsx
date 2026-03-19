@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
 import type { User } from "@supabase/supabase-js";
 
 async function uploadImage(file: File, path: string): Promise<string> {
@@ -21,16 +22,14 @@ export default function SubmitPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  // Form fields
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
   const [url, setUrl] = useState("");
-  const [tags, setTags] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [twitterUrl, setTwitterUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
 
-  // Image uploads
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState<string>("");
   const [screenshotFiles, setScreenshotFiles] = useState<File[]>([]);
@@ -48,6 +47,12 @@ export default function SubmitPage() {
       }
     });
   }, [router]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,17 +91,14 @@ export default function SubmitPage() {
       const screenshotUrls: string[] = [];
       for (const file of screenshotFiles) {
         const ext = file.name.split(".").pop();
-        const url = await uploadImage(
+        const uploaded = await uploadImage(
           file,
-          `${user.id}/screenshots/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+          `${user.id}/screenshots/${Date.now()}-${Math.random()
+            .toString(36)
+            .slice(2)}.${ext}`
         );
-        screenshotUrls.push(url);
+        screenshotUrls.push(uploaded);
       }
-
-      const tagList = tags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
 
       const { error } = await supabase.from("aa_apps").insert({
         user_id: user.id,
@@ -106,7 +108,7 @@ export default function SubmitPage() {
         url: url || null,
         icon_url: iconUrl,
         screenshot_urls: screenshotUrls.length > 0 ? screenshotUrls : null,
-        tags: tagList.length > 0 ? tagList : null,
+        tags: selectedTags.length > 0 ? selectedTags : null,
         twitter_url: twitterUrl || null,
         youtube_url: youtubeUrl || null,
       });
@@ -126,37 +128,27 @@ export default function SubmitPage() {
       <h1 className="text-2xl font-bold mb-8">アプリを投稿</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Icon upload */}
+        {/* Icon */}
         <div>
           <label className="block text-sm font-medium mb-2">アイコン</label>
           <div className="flex items-center gap-4">
             <button
               type="button"
               onClick={() => iconRef.current?.click()}
-              className="w-20 h-20 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 dark:hover:border-zinc-500 transition-colors overflow-hidden flex items-center justify-center"
+              className="w-20 h-20 rounded-2xl border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 transition-colors overflow-hidden flex items-center justify-center"
             >
               {iconPreview ? (
-                <img
-                  src={iconPreview}
-                  alt="icon preview"
-                  className="w-full h-full object-cover"
-                />
+                <img src={iconPreview} alt="icon" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-2xl text-zinc-300">+</span>
               )}
             </button>
             <p className="text-xs text-zinc-400">PNG / JPG 推奨</p>
-            <input
-              ref={iconRef}
-              type="file"
-              accept="image/*"
-              onChange={handleIconChange}
-              className="hidden"
-            />
+            <input ref={iconRef} type="file" accept="image/*" onChange={handleIconChange} className="hidden" />
           </div>
         </div>
 
-        {/* App name */}
+        {/* Name */}
         <div>
           <label className="block text-sm font-medium mb-1">アプリ名 *</label>
           <input
@@ -172,9 +164,7 @@ export default function SubmitPage() {
 
         {/* Tagline */}
         <div>
-          <label className="block text-sm font-medium mb-1">
-            キャッチコピー *
-          </label>
+          <label className="block text-sm font-medium mb-1">キャッチコピー *</label>
           <input
             type="text"
             value={tagline}
@@ -200,21 +190,15 @@ export default function SubmitPage() {
 
         {/* Screenshots */}
         <div>
-          <label className="block text-sm font-medium mb-2">
-            スクリーンショット（最大5枚）
-          </label>
+          <label className="block text-sm font-medium mb-2">スクリーンショット（最大5枚）</label>
           <div className="flex flex-wrap gap-2 mb-2">
             {screenshotPreviews.map((src, i) => (
               <div key={i} className="relative w-24 h-16">
-                <img
-                  src={src}
-                  alt={`screenshot ${i + 1}`}
-                  className="w-full h-full object-cover rounded-lg"
-                />
+                <img src={src} alt={`ss${i}`} className="w-full h-full object-cover rounded-lg" />
                 <button
                   type="button"
                   onClick={() => removeScreenshot(i)}
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs flex items-center justify-center hover:opacity-80"
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-xs flex items-center justify-center"
                 >
                   ×
                 </button>
@@ -230,14 +214,53 @@ export default function SubmitPage() {
               </button>
             )}
           </div>
-          <input
-            ref={screenshotRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleScreenshotsChange}
-            className="hidden"
-          />
+          <input ref={screenshotRef} type="file" accept="image/*" multiple onChange={handleScreenshotsChange} className="hidden" />
+        </div>
+
+        {/* Tags */}
+        <div>
+          <label className="block text-sm font-medium mb-3">
+            タグ{" "}
+            {selectedTags.length > 0 && (
+              <span className="text-zinc-400 font-normal">（{selectedTags.length}個選択中）</span>
+            )}
+          </label>
+
+          <p className="text-xs text-zinc-400 mb-2">プラットフォーム</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {PLATFORM_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedTags.includes(tag)
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
+
+          <p className="text-xs text-zinc-400 mb-2">カテゴリ</p>
+          <div className="flex flex-wrap gap-2">
+            {CATEGORY_TAGS.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                  selectedTags.includes(tag)
+                    ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                }`}
+              >
+                {tag}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* App URL */}
@@ -256,7 +279,7 @@ export default function SubmitPage() {
         <div className="space-y-3">
           <p className="text-sm font-medium">SNS・メディアリンク</p>
           <div className="flex items-center gap-2">
-            <span className="text-lg w-6 text-center">𝕏</span>
+            <span className="w-6 text-center font-bold text-sm">𝕏</span>
             <input
               type="url"
               value={twitterUrl}
@@ -266,7 +289,7 @@ export default function SubmitPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-lg w-6 text-center">▶</span>
+            <span className="w-6 text-center text-sm">▶</span>
             <input
               type="url"
               value={youtubeUrl}
@@ -275,20 +298,6 @@ export default function SubmitPage() {
               className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
             />
           </div>
-        </div>
-
-        {/* Tags */}
-        <div>
-          <label className="block text-sm font-medium mb-1">
-            タグ（カンマ区切り）
-          </label>
-          <input
-            type="text"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="iOS, ゲーム, 生産性"
-            className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
-          />
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
