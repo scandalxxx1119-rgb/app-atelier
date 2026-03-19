@@ -1,65 +1,207 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { supabase } from "@/lib/supabase";
+
+type App = {
+  id: string;
+  name: string;
+  tagline: string;
+  url: string | null;
+  icon_url: string | null;
+  tags: string[] | null;
+  likes_count: number;
+  created_at: string;
+  aa_profiles: { username: string } | null;
+};
+
+const SORT_OPTIONS = [
+  { label: "新着", value: "created_at" },
+  { label: "人気", value: "likes_count" },
+];
+
+export default function HomePage() {
+  const [apps, setApps] = useState<App[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState("");
+  const [sort, setSort] = useState("created_at");
+  const [allTags, setAllTags] = useState<string[]>([]);
+
+  useEffect(() => {
+    setLoading(true);
+    let query = supabase
+      .from("aa_apps")
+      .select("*, aa_profiles(username)")
+      .order(sort, { ascending: false });
+
+    supabase
+      .from("aa_apps")
+      .select("tags")
+      .then(({ data }) => {
+        const tags = new Set<string>();
+        data?.forEach((row) => row.tags?.forEach((t: string) => tags.add(t)));
+        setAllTags(Array.from(tags));
+      });
+
+    query.then(({ data }) => {
+      let filtered = (data as App[]) ?? [];
+      if (search) {
+        const q = search.toLowerCase();
+        filtered = filtered.filter(
+          (a) =>
+            a.name.toLowerCase().includes(q) ||
+            a.tagline.toLowerCase().includes(q)
+        );
+      }
+      if (selectedTag) {
+        filtered = filtered.filter((a) => a.tags?.includes(selectedTag));
+      }
+      setApps(filtered);
+      setLoading(false);
+    });
+  }, [sort, search, selectedTag]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      {/* Hero */}
+      <div className="mb-10">
+        <h1 className="text-3xl font-bold mb-2">App Atelier</h1>
+        <p className="text-zinc-500 dark:text-zinc-400">
+          個人開発者が作ったアプリを発見・応援しよう
+        </p>
+      </div>
+
+      {/* Search + Filter */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="アプリを検索..."
+          className="flex-1 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+        <div className="flex gap-2">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setSort(opt.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                sort === opt.value
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                  : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              }`}
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+              {opt.label}
+            </button>
+          ))}
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+      </div>
+
+      {/* Tag filter */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-8">
+          <button
+            onClick={() => setSelectedTag("")}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              !selectedTag
+                ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+            }`}
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+            すべて
+          </button>
+          {allTags.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => setSelectedTag(tag === selectedTag ? "" : tag)}
+              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                selectedTag === tag
+                  ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
+                  : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* App grid */}
+      {loading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="h-44 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse"
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+          ))}
         </div>
-      </main>
+      ) : apps.length === 0 ? (
+        <div className="text-center py-20 text-zinc-400">
+          <p className="text-lg mb-4">
+            {search || selectedTag
+              ? "該当するアプリが見つかりません"
+              : "まだアプリが投稿されていません"}
+          </p>
+          <Link
+            href="/submit"
+            className="px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity text-sm"
+          >
+            最初のアプリを投稿する
+          </Link>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {apps.map((app) => (
+            <Link
+              key={app.id}
+              href={`/apps/${app.id}`}
+              className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors"
+            >
+              <div className="flex items-start gap-3 mb-3">
+                {app.icon_url ? (
+                  <img
+                    src={app.icon_url}
+                    alt={app.name}
+                    className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                  />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-xl font-bold text-zinc-400">
+                    {app.name[0]}
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <h2 className="font-semibold truncate">{app.name}</h2>
+                  <p className="text-xs text-zinc-400">
+                    {app.aa_profiles?.username ?? "anonymous"}
+                  </p>
+                </div>
+                <div className="ml-auto flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                  <span>♥</span>
+                  <span>{app.likes_count}</span>
+                </div>
+              </div>
+              <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">
+                {app.tagline}
+              </p>
+              {app.tags && app.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {app.tags.slice(0, 3).map((tag) => (
+                    <span
+                      key={tag}
+                      className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
