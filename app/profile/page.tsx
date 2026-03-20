@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
   const [badge, setBadge] = useState<BadgeType>(null);
+  const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null);
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -34,22 +35,44 @@ export default function ProfilePage() {
       setUser(data.user);
 
       const [profileRes, appsRes] = await Promise.all([
-        supabase.from("aa_profiles").select("username, badge").eq("id", data.user.id).single(),
+        supabase.from("aa_profiles").select("username, badge, username_updated_at").eq("id", data.user.id).single(),
         supabase.from("aa_apps").select("id, name, tagline, icon_url, likes_count, created_at")
           .eq("user_id", data.user.id).order("created_at", { ascending: false }),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
       setBadge(profileRes.data?.badge ?? null);
+      setUsernameUpdatedAt(profileRes.data?.username_updated_at ?? null);
       setApps((appsRes.data as App[]) ?? []);
       setLoading(false);
     });
   }, [router]);
 
+  const canChangeUsername = () => {
+    if (!usernameUpdatedAt) return true;
+    const lastChanged = new Date(usernameUpdatedAt);
+    const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSince >= 7;
+  };
+
+  const daysUntilChange = () => {
+    if (!usernameUpdatedAt) return 0;
+    const lastChanged = new Date(usernameUpdatedAt);
+    const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
+    return Math.ceil(7 - daysSince);
+  };
+
   const handleSaveProfile = async () => {
     if (!user || !username.trim()) return;
+    if (!canChangeUsername()) return;
     setSaving(true);
-    await supabase.from("aa_profiles").upsert({ id: user.id, username: username.trim() });
+    const now = new Date().toISOString();
+    await supabase.from("aa_profiles").upsert({
+      id: user.id,
+      username: username.trim(),
+      username_updated_at: now,
+    });
+    setUsernameUpdatedAt(now);
     setSaving(false);
   };
 
@@ -76,17 +99,23 @@ export default function ProfilePage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               maxLength={30}
-              className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm"
+              disabled={!canChangeUsername()}
+              className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </div>
           <button
             onClick={handleSaveProfile}
-            disabled={saving}
+            disabled={saving || !canChangeUsername()}
             className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
           >
             {saving ? "保存中..." : "保存"}
           </button>
         </div>
+        {!canChangeUsername() && (
+          <p className="text-xs text-amber-500 mb-2">
+            あと{daysUntilChange()}日後に変更できます（7日に1回まで）
+          </p>
+        )}
         <div className="flex items-center gap-2">
           <p className="text-xs text-zinc-400">{user?.email}</p>
           {badge && <Badge badge={badge} />}
