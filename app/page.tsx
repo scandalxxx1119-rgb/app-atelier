@@ -37,7 +37,16 @@ export default function HomePage() {
       .from("aa_apps")
       .select("*, aa_profiles(username, badge)")
       .order(sort, { ascending: false })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          // joinが失敗した場合はprofileなしで再クエリ
+          supabase.from("aa_apps").select("*").order(sort, { ascending: false })
+            .then(({ data: data2 }) => {
+              setApps((data2 as App[]) ?? []);
+              setLoading(false);
+            });
+          return;
+        }
         let filtered = (data as App[]) ?? [];
         if (search) {
           const q = search.toLowerCase();
@@ -50,7 +59,6 @@ export default function HomePage() {
             selectedTags.every((t) => a.tags?.includes(t))
           );
         }
-        // Gold/Platinumを上位に
         const boostScore = (a: App) =>
           isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
         filtered.sort((a, b) => boostScore(b) - boostScore(a));
