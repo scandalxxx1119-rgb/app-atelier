@@ -1,10 +1,13 @@
-type BadgeType = "master" | "gold" | "silver" | "bronze" | null | undefined;
+type BadgeType = "master" | "platinum" | "gold" | "silver" | "bronze" | null | undefined;
 
 const BADGE_CONFIG = {
   master: {
     label: "MASTER",
-    className:
-      "bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 text-white",
+    className: "bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 text-white",
+  },
+  platinum: {
+    label: "PLATINUM",
+    className: "bg-gradient-to-r from-sky-300 via-cyan-200 to-indigo-300 text-zinc-800",
   },
   gold: {
     label: "GOLD",
@@ -19,6 +22,12 @@ const BADGE_CONFIG = {
     className: "bg-gradient-to-r from-amber-600 to-orange-700 text-white",
   },
 };
+
+export type { BadgeType };
+
+export function isPremiumBadge(badge: BadgeType): boolean {
+  return badge === "master" || badge === "platinum" || badge === "gold";
+}
 
 export default function Badge({
   badge,

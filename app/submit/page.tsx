@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
+import { isPremiumBadge } from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
 
 async function uploadImage(file: File, path: string): Promise<string> {
@@ -18,6 +19,7 @@ async function uploadImage(file: File, path: string): Promise<string> {
 export default function SubmitPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
@@ -42,11 +44,16 @@ export default function SubmitPage() {
   const screenshotRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (!data.user) router.push("/auth");
-      else { setUser(data.user); setLoading(false); }
+    supabase.auth.getUser().then(async ({ data }) => {
+      if (!data.user) { router.push("/auth"); return; }
+      setUser(data.user);
+      const { data: profile } = await supabase.from("aa_profiles").select("badge, is_premium").eq("id", data.user.id).single();
+      setIsPremium(isPremiumBadge(profile?.badge) || profile?.is_premium === true);
+      setLoading(false);
     });
   }, [router]);
+
+  const maxScreenshots = isPremium ? 10 : 5;
 
   const toggleTag = (tag: string) =>
     setSelectedTags((prev) =>
@@ -62,7 +69,7 @@ export default function SubmitPage() {
 
   const handleScreenshotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newFiles = Array.from(e.target.files ?? []);
-    const combined = [...screenshotFiles, ...newFiles].slice(0, 5);
+    const combined = [...screenshotFiles, ...newFiles].slice(0, maxScreenshots);
     setScreenshotFiles(combined);
     setScreenshotPreviews(combined.map((f) => URL.createObjectURL(f)));
   };
@@ -164,7 +171,7 @@ export default function SubmitPage() {
 
         {/* Screenshots */}
         <div>
-          <label className="block text-sm font-medium mb-2">スクリーンショット（最大5枚）</label>
+          <label className="block text-sm font-medium mb-2">スクリーンショット（最大{maxScreenshots}枚{isPremium ? "" : " / プレミアムは10枚"}）</label>
           <div className="flex flex-wrap gap-2">
             {screenshotPreviews.map((src, i) => (
               <div key={i} className="relative w-24 h-16">
@@ -175,7 +182,7 @@ export default function SubmitPage() {
                 </button>
               </div>
             ))}
-            {screenshotPreviews.length < 5 && (
+            {screenshotPreviews.length < maxScreenshots && (
               <button type="button" onClick={() => screenshotRef.current?.click()}
                 className="w-24 h-16 rounded-lg border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 transition-colors flex items-center justify-center text-zinc-300 text-2xl">
                 +
