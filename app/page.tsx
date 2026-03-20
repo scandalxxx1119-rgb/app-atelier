@@ -18,6 +18,7 @@ type App = {
   likes_count: number;
   created_at: string;
   user_id: string;
+  status: string | null;
   aa_profiles: { username: string; badge: string | null } | null;
 };
 
@@ -206,7 +207,15 @@ export default function HomePage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <h2 className="font-semibold truncate">{app.name}</h2>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <h2 className="font-semibold truncate">{app.name}</h2>
+                    {app.status === "beta" && (
+                      <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">β</span>
+                    )}
+                    {app.status === "dev" && (
+                      <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300">開発中</span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
                     {app.aa_profiles?.badge && (
