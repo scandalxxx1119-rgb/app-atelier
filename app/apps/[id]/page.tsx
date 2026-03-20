@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import Badge from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
 
 type App = {
@@ -22,7 +24,8 @@ type App = {
   user_id: string;
   twitter_url: string | null;
   youtube_url: string | null;
-  aa_profiles: { username: string } | null;
+  status: string | null;
+  aa_profiles: { username: string; badge: string | null } | null;
 };
 
 type Comment = {
@@ -133,7 +136,22 @@ export default function AppDetailPage() {
         <div className="flex-1 min-w-0">
           <h1 className="text-2xl font-bold mb-1">{app.name}</h1>
           <p className="text-zinc-500 dark:text-zinc-400 mb-2">{app.tagline}</p>
-          <p className="text-xs text-zinc-400">by {app.aa_profiles?.username ?? "anonymous"}</p>
+          <div className="flex items-center gap-2">
+            <Link href={`/users/${app.aa_profiles?.username}`} className="text-xs text-zinc-400 hover:underline">
+              by {app.aa_profiles?.username ?? "anonymous"}
+            </Link>
+            {app.aa_profiles?.badge && <Badge badge={app.aa_profiles.badge as "master"|"gold"|"silver"|"bronze"} size="xs" />}
+            {app.status && app.status !== "released" && (
+              <span className={`text-xs px-2 py-0.5 rounded-full ${app.status === "beta" ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300" : "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300"}`}>
+                {app.status === "beta" ? "β ベータ版" : "🚧 開発中"}
+              </span>
+            )}
+          </div>
+          {user?.id === app.user_id && (
+            <Link href={`/apps/${app.id}/edit`} className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline mt-1 inline-block">
+              編集
+            </Link>
+          )}
         </div>
         <div className="flex flex-col items-center gap-1">
           <button onClick={handleLike} className="group flex flex-col items-center gap-1">
