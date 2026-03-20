@@ -121,7 +121,8 @@ export default function SubmitPage() {
       if (error) throw error;
       router.push("/");
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "エラーが発生しました");
+      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      setError(msg);
       setSubmitting(false);
     }
   };
