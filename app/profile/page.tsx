@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [badge, setBadge] = useState<BadgeType>(null);
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null);
   const [apps, setApps] = useState<App[]>([]);
+  const [points, setPoints] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -40,13 +41,16 @@ export default function ProfilePage() {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
 
-      const [profileRes, appsRes] = await Promise.all([
+      const [profileRes, appsRes, pointsRes] = await Promise.all([
         supabase.from("aa_profiles")
           .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
         supabase.from("aa_apps")
           .select("id, name, tagline, icon_url, likes_count, status")
           .eq("user_id", data.user.id).order("created_at", { ascending: false }),
+        supabase.from("aa_points")
+          .select("amount")
+          .eq("user_id", data.user.id),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
@@ -58,6 +62,8 @@ export default function ProfilePage() {
       setGithubUrl(profileRes.data?.github_url ?? "");
       setWebsiteUrl(profileRes.data?.website_url ?? "");
       setApps((appsRes.data as App[]) ?? []);
+      const total = (pointsRes.data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
+      setPoints(total);
       setLoading(false);
     });
   }, [router]);
@@ -206,6 +212,16 @@ export default function ProfilePage() {
             {saving ? "保存中..." : "保存"}
           </button>
         </div>
+      </section>
+
+      {/* Points */}
+      <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">ポイント残高</h2>
+        <div className="flex items-end gap-1">
+          <span className="text-3xl font-bold">{points.toLocaleString()}</span>
+          <span className="text-sm text-zinc-400 mb-1">pt</span>
+        </div>
+        <p className="text-xs text-zinc-400 mt-1">テスター参加などで獲得できます</p>
       </section>
 
       {/* My apps */}

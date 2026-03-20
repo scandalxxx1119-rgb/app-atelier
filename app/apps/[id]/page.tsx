@@ -240,7 +240,12 @@ export default function AppDetailPage() {
               </span>
             )}
             {isOwner && (
-              <Link href={`/apps/${app.id}/edit`} className="text-xs text-zinc-400 hover:underline ml-1">編集</Link>
+              <>
+                <Link href={`/apps/${app.id}/edit`} className="text-xs text-zinc-400 hover:underline ml-1">編集</Link>
+                {isTesterApp && (
+                  <Link href={`/apps/${app.id}/testers`} className="text-xs text-blue-500 hover:underline">テスター管理</Link>
+                )}
+              </>
             )}
           </div>
         </div>
