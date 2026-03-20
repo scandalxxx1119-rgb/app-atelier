@@ -54,11 +54,20 @@ export default function AppDetailPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
-    supabase.from("aa_apps").select("*, aa_profiles(username)").eq("id", id).single()
-      .then(({ data }) => setApp(data as App));
+    supabase.from("aa_apps").select("*, aa_profiles(username, badge, avatar_url)").eq("id", id).single()
+      .then(({ data, error }) => {
+        if (error || !data) {
+          supabase.from("aa_apps").select("*").eq("id", id).single()
+            .then(({ data: d2 }) => setApp(d2 as App));
+        } else {
+          setApp(data as App);
+        }
+      });
     supabase.from("aa_comments").select("*, aa_profiles(username)").eq("app_id", id)
       .order("created_at", { ascending: true })
-      .then(({ data }) => setComments((data as Comment[]) ?? []));
+      .then(({ data, error }) => {
+        if (!error) setComments((data as Comment[]) ?? []);
+      });
   }, [id]);
 
   useEffect(() => {
