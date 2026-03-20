@@ -143,6 +143,7 @@ export default function AppDetailPage() {
 
   const handleLike = async () => {
     if (!user) { router.push("/auth"); return; }
+    if (app && user.id === app.user_id) return; // 自分のアプリはいいね不可
     if (liked) {
       await supabase.from("aa_likes").delete().eq("app_id", id).eq("user_id", user.id);
       setLiked(false);
@@ -172,6 +173,7 @@ export default function AppDetailPage() {
   const handleApply = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) { router.push("/auth"); return; }
+    if (app && user.id === app.user_id) return; // 自分のアプリには申請不可
     setApplying(true);
     const { data } = await supabase.from("aa_tester_applications")
       .insert({ app_id: id, user_id: user.id, message: applyMsg.trim() || null })
@@ -179,15 +181,7 @@ export default function AppDetailPage() {
     if (data) {
       setApplication(data as Application);
       setTotalApplicants((n) => n + 1);
-      // ポイント付与
-      if (app?.tester_reward_points) {
-        await supabase.from("aa_points").insert({
-          user_id: user.id,
-          amount: app.tester_reward_points,
-          reason: `「${app.name}」のテスターに参加`,
-          app_id: id,
-        });
-      }
+      // ポイントは承認時に付与（testers/page.tsxで処理）
     }
     setApplyOpen(false);
     setApplying(false);

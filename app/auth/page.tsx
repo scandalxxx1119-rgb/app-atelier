@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 
 export default function AuthPage() {
   const router = useRouter();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup" | "reset">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
@@ -21,6 +21,16 @@ export default function AuthPage() {
     setLoading(true);
 
     try {
+      if (mode === "reset") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth/update-password`,
+        });
+        if (error) throw error;
+        setDone(true);
+        setLoading(false);
+        return;
+      }
+
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -102,9 +112,13 @@ export default function AuthPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-center space-y-3 px-4">
           <p className="text-3xl">📧</p>
-          <p className="text-xl font-semibold">確認メールを送信しました</p>
+          <p className="text-xl font-semibold">
+            {mode === "reset" ? "リセットメールを送信しました" : "確認メールを送信しました"}
+          </p>
           <p className="text-zinc-500 text-sm">
-            メール内のリンクをクリックして登録を完了してください
+            {mode === "reset"
+              ? "メール内のリンクからパスワードを再設定してください"
+              : "メール内のリンクをクリックして登録を完了してください"}
           </p>
           <button
             onClick={() => { setDone(false); setMode("login"); }}
@@ -143,6 +157,12 @@ export default function AuthPage() {
             新規登録
           </button>
         </div>
+
+        {mode === "reset" && (
+          <p className="text-sm text-zinc-500 mb-4">
+            登録済みのメールアドレスを入力してください。パスワード再設定のリンクを送ります。
+          </p>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
@@ -221,8 +241,29 @@ export default function AuthPage() {
               ? "処理中..."
               : mode === "login"
               ? "ログイン"
+              : mode === "reset"
+              ? "リセットメールを送る"
               : "登録する"}
           </button>
+
+          {mode === "login" && (
+            <button
+              type="button"
+              onClick={() => { setMode("reset"); setError(""); }}
+              className="w-full text-center text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+            >
+              パスワードを忘れた方はこちら
+            </button>
+          )}
+          {mode === "reset" && (
+            <button
+              type="button"
+              onClick={() => { setMode("login"); setError(""); }}
+              className="w-full text-center text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors"
+            >
+              ログインに戻る
+            </button>
+          )}
         </form>
       </div>
     </div>

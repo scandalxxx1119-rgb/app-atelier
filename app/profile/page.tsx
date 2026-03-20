@@ -38,6 +38,9 @@ export default function ProfilePage() {
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
+  const [newEmail, setNewEmail] = useState("");
+  const [emailSaving, setEmailSaving] = useState(false);
+  const [emailMsg, setEmailMsg] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -124,6 +127,20 @@ export default function ProfilePage() {
     });
     if (canChangeUsername() && username.trim()) setUsernameUpdatedAt(now);
     setSaving(false);
+  };
+
+  const handleEmailChange = async () => {
+    if (!newEmail.trim() || newEmail === user?.email) return;
+    setEmailSaving(true);
+    setEmailMsg("");
+    const { error } = await supabase.auth.updateUser({ email: newEmail.trim() });
+    if (error) {
+      setEmailMsg("変更に失敗しました: " + error.message);
+    } else {
+      setEmailMsg("確認メールを送信しました。新しいメールアドレスのリンクをクリックしてください。");
+      setNewEmail("");
+    }
+    setEmailSaving(false);
   };
 
   const handleDelete = async (appId: string) => {
@@ -234,6 +251,25 @@ export default function ProfilePage() {
             className="px-5 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50">
             {saving ? "保存中..." : "保存"}
           </button>
+        </div>
+
+        {/* Email change */}
+        <div className="border-t border-zinc-100 dark:border-zinc-800 pt-4">
+          <label className="block text-sm font-medium mb-1">メールアドレス変更</label>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="新しいメールアドレス"
+              className={inputCls}
+            />
+            <button onClick={handleEmailChange} disabled={emailSaving || !newEmail.trim()}
+              className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50 flex-shrink-0">
+              {emailSaving ? "送信中..." : "変更"}
+            </button>
+          </div>
+          {emailMsg && <p className="text-xs mt-1 text-zinc-500">{emailMsg}</p>}
         </div>
       </section>
 

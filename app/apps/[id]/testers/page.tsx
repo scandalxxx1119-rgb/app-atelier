@@ -80,14 +80,25 @@ export default function TestersPage() {
     });
   }, [id, router]);
 
-  const updateStatus = async (appId: string, status: "approved" | "rejected") => {
-    setUpdating(appId);
-    await supabase
-      .from("aa_tester_applications")
-      .update({ status })
-      .eq("id", appId);
+  const updateStatus = async (applicationId: string, status: "approved" | "rejected") => {
+    setUpdating(applicationId);
+    await supabase.from("aa_tester_applications").update({ status }).eq("id", applicationId);
+
+    // 承認時のみポイント付与（未承認→承認の場合だけ）
+    if (status === "approved" && app && app.tester_reward_points > 0) {
+      const target = applications.find((a) => a.id === applicationId);
+      if (target && target.status !== "approved") {
+        await supabase.from("aa_points").insert({
+          user_id: target.user_id,
+          amount: app.tester_reward_points,
+          reason: `「${app.name}」のテスターに承認`,
+          app_id: app.id,
+        });
+      }
+    }
+
     setApplications((prev) =>
-      prev.map((a) => (a.id === appId ? { ...a, status } : a))
+      prev.map((a) => (a.id === applicationId ? { ...a, status } : a))
     );
     setUpdating(null);
   };
