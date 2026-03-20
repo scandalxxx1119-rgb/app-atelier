@@ -106,7 +106,14 @@ export default function ProfilePage() {
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">プロフィール</h2>
-          {badge && <Badge badge={badge} />}
+          <div className="flex items-center gap-3">
+            {badge && <Badge badge={badge} />}
+            {username && (
+              <Link href={`/users/${username}`} className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline transition-colors">
+                公開ページを見る →
+              </Link>
+            )}
+          </div>
         </div>
 
         {/* Username */}
