@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
-export default function AuthCallbackPage() {
+function CallbackHandler() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -20,7 +20,6 @@ export default function AuthCallbackPage() {
         router.push("/auth?error=1");
         return;
       }
-      // プロフィールがなければ作成
       await supabase.from("aa_profiles").upsert(
         { id: data.user.id, username: data.user.email?.split("@")[0] ?? "user" },
         { onConflict: "id" }
@@ -29,9 +28,15 @@ export default function AuthCallbackPage() {
     });
   }, [router, searchParams]);
 
+  return <p className="text-zinc-400 text-sm">認証処理中...</p>;
+}
+
+export default function AuthCallbackPage() {
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <p className="text-zinc-400 text-sm">認証処理中...</p>
+      <Suspense fallback={<p className="text-zinc-400 text-sm">読み込み中...</p>}>
+        <CallbackHandler />
+      </Suspense>
     </div>
   );
 }
