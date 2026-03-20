@@ -88,20 +88,19 @@ export default function ProfilePage() {
     setAvatarError("");
     setAvatarUploading(true);
     const ext = file.name.split(".").pop();
-    const path = `${user.id}/avatar.${ext}`;
-    const { error } = await supabase.storage.from("aa-apps").upload(path, file, { upsert: true });
+    const path = `${user.id}/avatar_${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("aa-apps").upload(path, file);
     if (error) {
       setAvatarError("アップロードに失敗しました: " + error.message);
     } else {
       const { data } = supabase.storage.from("aa-apps").getPublicUrl(path);
-      const urlWithCache = `${data.publicUrl}?t=${Date.now()}`;
       const { error: dbError } = await supabase.from("aa_profiles")
         .update({ avatar_url: data.publicUrl })
         .eq("id", user.id);
       if (dbError) {
         setAvatarError("保存に失敗しました: " + dbError.message);
       } else {
-        setAvatarUrl(urlWithCache);
+        setAvatarUrl(data.publicUrl);
       }
     }
     setAvatarUploading(false);
