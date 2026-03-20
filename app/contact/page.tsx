@@ -33,8 +33,8 @@ export default function ContactPage() {
               <tr>
                 <td className="py-3 pr-6 text-zinc-400 whitespace-nowrap">X (Twitter)</td>
                 <td className="py-3">
-                  <a href="https://x.com/pikkaw2" className="underline text-zinc-500" target="_blank" rel="noopener noreferrer">
-                    @pikkaw2
+                  <a href="https://x.com/app_atelier" className="underline text-zinc-500" target="_blank" rel="noopener noreferrer">
+                    @app_atelier
                   </a>
                 </td>
               </tr>
@@ -48,7 +48,7 @@ export default function ContactPage() {
             ご意見・ご要望・不具合報告・プライバシーに関するお問い合わせは、X（Twitter）のDMにてご連絡ください。
           </p>
           <a
-            href="https://x.com/pikkaw2"
+            href="https://x.com/app_atelier"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium text-sm hover:opacity-80 transition-opacity"

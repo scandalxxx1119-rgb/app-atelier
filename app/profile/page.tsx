@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Badge from "@/components/Badge";
+import { validateImageFile } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
 type App = {
@@ -86,6 +87,8 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file || !user) return;
     setAvatarError("");
+    const sizeError = validateImageFile(file, 5);
+    if (sizeError) { setAvatarError(sizeError); return; }
     setAvatarUploading(true);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/avatar_${Date.now()}.${ext}`;
@@ -242,6 +245,14 @@ export default function ProfilePage() {
           <span className="text-sm text-zinc-400 mb-1">pt</span>
         </div>
         <p className="text-xs text-zinc-400 mt-1">テスター参加などで獲得できます</p>
+      </section>
+
+      {/* Account deletion */}
+      <section className="mb-8 p-5 rounded-xl border border-red-100 dark:border-red-900 bg-white dark:bg-zinc-900">
+        <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">アカウント削除</h2>
+        <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
+          アカウントを削除する場合は、<a href="/contact" className="underline hover:text-zinc-900 dark:hover:text-zinc-100">お問い合わせ</a>からご連絡ください。投稿したアプリ・コメント等のデータも削除します。
+        </p>
       </section>
 
       {/* My apps */}

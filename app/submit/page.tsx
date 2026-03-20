@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS, SPECIAL_TAGS } from "@/lib/tags";
 import { isPremiumBadge } from "@/components/Badge";
+import { validateImageFile } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
 const STATUS_OPTIONS = [
@@ -70,12 +71,18 @@ export default function SubmitPage() {
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const err = validateImageFile(file, 10);
+    if (err) { setError(err); return; }
     setIconFile(file);
     setIconPreview(URL.createObjectURL(file));
   };
 
   const handleScreenshotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(e.target.files ?? []);
+    const newFiles = Array.from(e.target.files ?? []).filter((f) => {
+      const err = validateImageFile(f, 10);
+      if (err) { setError(err); return false; }
+      return true;
+    });
     const combined = [...screenshotFiles, ...newFiles].slice(0, maxScreenshots);
     setScreenshotFiles(combined);
     setScreenshotPreviews(combined.map((f) => URL.createObjectURL(f)));

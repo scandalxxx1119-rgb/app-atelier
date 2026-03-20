@@ -13,6 +13,7 @@ export default function AuthPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +190,22 @@ export default function AuthPage() {
             />
           </div>
 
+          {mode === "signup" && (
+            <label className="flex items-start gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={agreedToTerms}
+                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                className="mt-0.5 flex-shrink-0"
+              />
+              <span className="text-xs text-zinc-500 dark:text-zinc-400">
+                <a href="/terms" target="_blank" className="underline hover:text-zinc-900 dark:hover:text-zinc-100">利用規約</a>および
+                <a href="/privacy" target="_blank" className="underline hover:text-zinc-900 dark:hover:text-zinc-100">プライバシーポリシー</a>
+                に同意します
+              </span>
+            </label>
+          )}
+
           {error && (
             <div className="px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900">
               <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
@@ -197,7 +214,7 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || (mode === "signup" && !agreedToTerms)}
             className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity disabled:opacity-50 text-sm"
           >
             {loading

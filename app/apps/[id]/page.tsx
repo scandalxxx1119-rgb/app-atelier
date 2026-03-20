@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Badge from "@/components/Badge";
+import { safeUrl } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
 type App = {
@@ -322,11 +323,11 @@ export default function AppDetailPage() {
 
       {/* Action buttons */}
       <div className="flex flex-wrap gap-2 mb-8">
-        {app.app_store_url && <a href={app.app_store_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">🍎 App Store</a>}
-        {app.play_store_url && <a href={app.play_store_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">▶ Google Play</a>}
-        {app.url && <a href={app.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🌐 Web</a>}
-        {app.github_url && <a href={app.github_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🐙 GitHub</a>}
-        {app.twitter_url && <a href={app.twitter_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">𝕏 フォロー</a>}
+        {safeUrl(app.app_store_url) && <a href={safeUrl(app.app_store_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">🍎 App Store</a>}
+        {safeUrl(app.play_store_url) && <a href={safeUrl(app.play_store_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">▶ Google Play</a>}
+        {safeUrl(app.url) && <a href={safeUrl(app.url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🌐 Web</a>}
+        {safeUrl(app.github_url) && <a href={safeUrl(app.github_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🐙 GitHub</a>}
+        {safeUrl(app.twitter_url) && <a href={safeUrl(app.twitter_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">𝕏 フォロー</a>}
         <button onClick={handleXShare} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors ml-auto">𝕏 シェア</button>
         <button onClick={handleShare} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">{copied ? "✓ コピー済み" : "🔗 リンク"}</button>
       </div>
