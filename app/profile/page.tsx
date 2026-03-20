@@ -95,8 +95,14 @@ export default function ProfilePage() {
     } else {
       const { data } = supabase.storage.from("aa-apps").getPublicUrl(path);
       const urlWithCache = `${data.publicUrl}?t=${Date.now()}`;
-      setAvatarUrl(urlWithCache);
-      await supabase.from("aa_profiles").upsert({ id: user.id, avatar_url: data.publicUrl });
+      const { error: dbError } = await supabase.from("aa_profiles")
+        .update({ avatar_url: data.publicUrl })
+        .eq("id", user.id);
+      if (dbError) {
+        setAvatarError("保存に失敗しました: " + dbError.message);
+      } else {
+        setAvatarUrl(urlWithCache);
+      }
     }
     setAvatarUploading(false);
   };
