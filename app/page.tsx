@@ -46,25 +46,25 @@ export default function HomePage() {
 
   useEffect(() => {
     setLoading(true);
-    let query = supabase
-      .from("aa_apps")
-      .select("*, aa_profiles(username, badge)")
-      .order(sort, { ascending: false });
+    let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false });
+    if (tab === "mine" && user) query = query.eq("user_id", user.id);
 
-    if (tab === "mine" && user) {
-      query = query.eq("user_id", user.id);
-    }
+    query.then(async ({ data }) => {
+      let appsData = (data as App[]) ?? [];
 
-    query.then(({ data, error }) => {
-      if (error) {
-        supabase.from("aa_apps").select("*").order(sort, { ascending: false })
-          .then(({ data: data2 }) => {
-            setApps((data2 as App[]) ?? []);
-            setLoading(false);
-          });
-        return;
+      // プロフィールを個別クエリで取得
+      const userIds = [...new Set(appsData.map((a) => a.user_id))];
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("aa_profiles").select("id, username, badge").in("id", userIds);
+        const profileMap: Record<string, { username: string; badge: string | null }> = {};
+        profiles?.forEach((p: { id: string; username: string; badge: string | null }) => {
+          profileMap[p.id] = { username: p.username, badge: p.badge };
+        });
+        appsData = appsData.map((a) => ({ ...a, aa_profiles: profileMap[a.user_id] ?? null }));
       }
-      let filtered = (data as App[]) ?? [];
+
+      let filtered = appsData;
       if (search) {
         const q = search.toLowerCase();
         filtered = filtered.filter(
@@ -72,9 +72,7 @@ export default function HomePage() {
         );
       }
       if (selectedTags.length > 0) {
-        filtered = filtered.filter((a) =>
-          selectedTags.every((t) => a.tags?.includes(t))
-        );
+        filtered = filtered.filter((a) => selectedTags.every((t) => a.tags?.includes(t)));
       }
       if (tab === "all") {
         const boostScore = (a: App) =>
@@ -207,15 +205,7 @@ export default function HomePage() {
                   </div>
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    <h2 className="font-semibold truncate">{app.name}</h2>
-                    {app.status === "beta" && (
-                      <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300">β</span>
-                    )}
-                    {app.status === "dev" && (
-                      <span className="flex-shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300">開発中</span>
-                    )}
-                  </div>
+                  <h2 className="font-semibold truncate">{app.name}</h2>
                   <div className="flex items-center gap-1.5 mt-0.5">
                     <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
                     {app.aa_profiles?.badge && (
@@ -228,18 +218,22 @@ export default function HomePage() {
                 </div>
               </div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
-              {app.tags && app.tags.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {app.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
-                      {tag}
-                    </span>
-                  ))}
-                  {app.tags.length > 3 && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">+{app.tags.length - 3}</span>
-                  )}
-                </div>
-              )}
+              <div className="flex flex-wrap gap-1">
+                {app.status === "beta" && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-medium">β ベータ版</span>
+                )}
+                {app.status === "dev" && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚧 開発中</span>
+                )}
+                {app.tags && app.tags.slice(0, 3).map((tag) => (
+                  <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">
+                    {tag}
+                  </span>
+                ))}
+                {app.tags && app.tags.length > 3 && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">+{app.tags.length - 3}</span>
+                )}
+              </div>
             </Link>
           ))}
         </div>
