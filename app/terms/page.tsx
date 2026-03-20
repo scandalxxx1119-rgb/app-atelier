@@ -57,7 +57,18 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">6. 免責事項</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">6. ポイント制度について</h2>
+          <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
+            <li>ポイントはサービス内でのみ使用できる仮想ポイントです</li>
+            <li>ポイントは現金・電子マネー・その他の財物と交換することはできません</li>
+            <li>ポイントの有効期限・交換レート・用途は運営者が随時変更できます</li>
+            <li>アカウント削除時にポイントは消滅します</li>
+            <li>不正な手段で取得したポイントは没収することがあります</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">7. 免責事項</h2>
           <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
             <li>本サービスは現状有姿で提供します。動作の完全性・継続性を保証しません</li>
             <li>ユーザー間のトラブルについて、運営者は責任を負いません</li>
@@ -67,7 +78,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">7. サービスの変更・停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. サービスの変更・停止</h2>
           <p>
             運営者は、ユーザーへの事前通知なくサービスの内容を変更・停止・終了することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -75,21 +86,21 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. アカウント停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. アカウント停止</h2>
           <p>
             本規約に違反した場合、予告なくアカウントを停止・削除することがあります。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. 準拠法・管轄</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. 準拠法・管轄</h2>
           <p>
             本規約は日本法に準拠します。本サービスに関する紛争については、運営者の所在地を管轄する裁判所を合意管轄とします。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. お問い合わせ</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. お問い合わせ</h2>
           <p>
             本規約に関するお問い合わせは<a href="/contact" className="underline text-zinc-500">こちら</a>からご連絡ください。
           </p>

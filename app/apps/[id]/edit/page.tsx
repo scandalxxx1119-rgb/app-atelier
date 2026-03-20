@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
+import { validateImageFile } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
 async function uploadImage(file: File, path: string): Promise<string> {
@@ -78,12 +79,18 @@ export default function EditAppPage() {
   const handleIconChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const err = validateImageFile(file, 10);
+    if (err) { setError(err); return; }
     setIconFile(file);
     setIconPreview(URL.createObjectURL(file));
   };
 
   const handleScreenshotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newFiles = Array.from(e.target.files ?? []);
+    const newFiles = Array.from(e.target.files ?? []).filter((f) => {
+      const err = validateImageFile(f, 10);
+      if (err) { setError(err); return false; }
+      return true;
+    });
     const combined = [...screenshotFiles, ...newFiles.map(f => f as File | null)].slice(0, 5);
     setScreenshotFiles(combined);
     setScreenshotPreviews(combined.map((f, i) => f ? URL.createObjectURL(f) : screenshotPreviews[i] ?? ""));
@@ -131,7 +138,7 @@ export default function EditAppPage() {
         screenshot_urls: finalScreenshots.length > 0 ? finalScreenshots : null,
         tags: selectedTags.length > 0 ? selectedTags : null,
         status,
-      }).eq("id", id);
+      }).eq("id", id).eq("user_id", user.id);
 
       if (error) throw error;
       router.push(`/apps/${id}`);
