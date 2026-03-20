@@ -7,6 +7,13 @@ export const PLATFORM_TAGS = [
   "クロスプラットフォーム",
 ];
 
+export const SPECIAL_TAGS = [
+  "テスター募集",
+  "オープンソース",
+  "無料",
+  "サブスク",
+];
+
 export const CATEGORY_TAGS = [
   "ゲーム",
   "仕事効率化",
@@ -32,4 +39,4 @@ export const CATEGORY_TAGS = [
   "AI・機械学習",
 ];
 
-export const ALL_PRESET_TAGS = [...PLATFORM_TAGS, ...CATEGORY_TAGS];
+export const ALL_PRESET_TAGS = [...SPECIAL_TAGS, ...PLATFORM_TAGS, ...CATEGORY_TAGS];

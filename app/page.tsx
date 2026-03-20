@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
+import { PLATFORM_TAGS, CATEGORY_TAGS, SPECIAL_TAGS } from "@/lib/tags";
 import Badge, { isPremiumBadge } from "@/components/Badge";
 import type { BadgeType } from "@/components/Badge";
 
@@ -96,6 +96,17 @@ export default function HomePage() {
 
       {/* Tag filters */}
       <div className="mb-8 space-y-3">
+        <div className="flex flex-wrap items-start gap-2">
+          <span className="text-xs text-zinc-400 w-20 flex-shrink-0 pt-1">特別</span>
+          <div className="flex flex-wrap gap-1.5">
+            {SPECIAL_TAGS.map((tag) => (
+              <button key={tag} onClick={() => toggleTag(tag)}
+                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTags.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
+                {tag}
+              </button>
+            ))}
+          </div>
+        </div>
         <div className="flex flex-wrap items-start gap-2">
           <span className="text-xs text-zinc-400 w-20 flex-shrink-0 pt-1">プラットフォーム</span>
           <div className="flex flex-wrap gap-1.5">

@@ -3,9 +3,15 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
+import { PLATFORM_TAGS, CATEGORY_TAGS, SPECIAL_TAGS } from "@/lib/tags";
 import { isPremiumBadge } from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
+
+const STATUS_OPTIONS = [
+  { value: "released", label: "リリース済み" },
+  { value: "beta", label: "ベータ版" },
+  { value: "dev", label: "開発中" },
+];
 
 async function uploadImage(file: File, path: string): Promise<string> {
   const { error } = await supabase.storage
@@ -34,6 +40,7 @@ export default function SubmitPage() {
   const [twitterUrl, setTwitterUrl] = useState("");
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [status, setStatus] = useState("released");
 
   const [iconFile, setIconFile] = useState<File | null>(null);
   const [iconPreview, setIconPreview] = useState("");
@@ -116,6 +123,7 @@ export default function SubmitPage() {
         icon_url: iconUrl,
         screenshot_urls: screenshotUrls.length > 0 ? screenshotUrls : null,
         tags: selectedTags.length > 0 ? selectedTags : null,
+        status,
       });
 
       if (error) throw error;
@@ -151,6 +159,19 @@ export default function SubmitPage() {
             </button>
             <p className="text-xs text-zinc-400">PNG / JPG 推奨<br />1024×1024px</p>
             <input ref={iconRef} type="file" accept="image/*" onChange={handleIconChange} className="hidden" />
+          </div>
+        </div>
+
+        {/* Status */}
+        <div>
+          <label className="block text-sm font-medium mb-2">ステータス</label>
+          <div className="flex gap-2 flex-wrap">
+            {STATUS_OPTIONS.map((opt) => (
+              <button key={opt.value} type="button" onClick={() => setStatus(opt.value)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${status === opt.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -198,6 +219,13 @@ export default function SubmitPage() {
           <label className="block text-sm font-medium mb-3">
             タグ{selectedTags.length > 0 && <span className="text-zinc-400 font-normal ml-1">({selectedTags.length}個)</span>}
           </label>
+          <p className="text-xs text-zinc-400 mb-2">特別タグ</p>
+          <div className="flex flex-wrap gap-1.5 mb-4">
+            {SPECIAL_TAGS.map((tag) => (
+              <button key={tag} type="button" onClick={() => toggleTag(tag)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${selectedTags.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>{tag}</button>
+            ))}
+          </div>
           <p className="text-xs text-zinc-400 mb-2">プラットフォーム</p>
           <div className="flex flex-wrap gap-1.5 mb-4">
             {PLATFORM_TAGS.map((tag) => (
