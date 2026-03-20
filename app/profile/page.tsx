@@ -13,15 +13,19 @@ type App = {
   tagline: string;
   icon_url: string | null;
   likes_count: number;
-  created_at: string;
+  status: string | null;
 };
 
-type BadgeType = "master" | "gold" | "silver" | "bronze" | null;
+type BadgeType = "master" | "platinum" | "gold" | "silver" | "bronze" | null;
 
 export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
+  const [bio, setBio] = useState("");
+  const [twitterUrl, setTwitterUrl] = useState("");
+  const [githubUrl, setGithubUrl] = useState("");
+  const [websiteUrl, setWebsiteUrl] = useState("");
   const [badge, setBadge] = useState<BadgeType>(null);
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null);
   const [apps, setApps] = useState<App[]>([]);
@@ -35,14 +39,21 @@ export default function ProfilePage() {
       setUser(data.user);
 
       const [profileRes, appsRes] = await Promise.all([
-        supabase.from("aa_profiles").select("username, badge, username_updated_at").eq("id", data.user.id).single(),
-        supabase.from("aa_apps").select("id, name, tagline, icon_url, likes_count, created_at")
+        supabase.from("aa_profiles")
+          .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url")
+          .eq("id", data.user.id).single(),
+        supabase.from("aa_apps")
+          .select("id, name, tagline, icon_url, likes_count, status")
           .eq("user_id", data.user.id).order("created_at", { ascending: false }),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
       setBadge(profileRes.data?.badge ?? null);
       setUsernameUpdatedAt(profileRes.data?.username_updated_at ?? null);
+      setBio(profileRes.data?.bio ?? "");
+      setTwitterUrl(profileRes.data?.twitter_url ?? "");
+      setGithubUrl(profileRes.data?.github_url ?? "");
+      setWebsiteUrl(profileRes.data?.website_url ?? "");
       setApps((appsRes.data as App[]) ?? []);
       setLoading(false);
     });
@@ -50,29 +61,30 @@ export default function ProfilePage() {
 
   const canChangeUsername = () => {
     if (!usernameUpdatedAt) return true;
-    const lastChanged = new Date(usernameUpdatedAt);
-    const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
-    return daysSince >= 7;
+    const days = (Date.now() - new Date(usernameUpdatedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return days >= 7;
   };
 
   const daysUntilChange = () => {
     if (!usernameUpdatedAt) return 0;
-    const lastChanged = new Date(usernameUpdatedAt);
-    const daysSince = (Date.now() - lastChanged.getTime()) / (1000 * 60 * 60 * 24);
-    return Math.ceil(7 - daysSince);
+    const days = (Date.now() - new Date(usernameUpdatedAt).getTime()) / (1000 * 60 * 60 * 24);
+    return Math.ceil(7 - days);
   };
 
   const handleSaveProfile = async () => {
-    if (!user || !username.trim()) return;
-    if (!canChangeUsername()) return;
+    if (!user) return;
     setSaving(true);
-    const now = new Date().toISOString();
+    const now = canChangeUsername() && username.trim() ? new Date().toISOString() : usernameUpdatedAt;
     await supabase.from("aa_profiles").upsert({
       id: user.id,
-      username: username.trim(),
-      username_updated_at: now,
+      username: username.trim() || undefined,
+      username_updated_at: canChangeUsername() ? now : usernameUpdatedAt,
+      bio: bio.trim() || null,
+      twitter_url: twitterUrl.trim() || null,
+      github_url: githubUrl.trim() || null,
+      website_url: websiteUrl.trim() || null,
     });
-    setUsernameUpdatedAt(now);
+    if (canChangeUsername() && username.trim()) setUsernameUpdatedAt(now);
     setSaving(false);
   };
 
@@ -84,41 +96,76 @@ export default function ProfilePage() {
 
   if (loading) return null;
 
+  const inputCls = "w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm";
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <h1 className="text-2xl font-bold mb-8">マイページ</h1>
 
       {/* Profile */}
-      <section className="mb-10 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">プロフィール</h2>
-        <div className="flex items-end gap-3 mb-3">
-          <div>
-            <label className="block text-sm font-medium mb-1">ユーザー名</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              maxLength={30}
-              disabled={!canChangeUsername()}
-              className="px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+      <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">プロフィール</h2>
+          {badge && <Badge badge={badge} />}
+        </div>
+
+        {/* Username */}
+        <div>
+          <label className="block text-sm font-medium mb-1">ユーザー名</label>
+          <input
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            maxLength={30}
+            disabled={!canChangeUsername()}
+            className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+          />
+          {!canChangeUsername() && (
+            <p className="text-xs text-amber-500 mt-1">あと{daysUntilChange()}日後に変更できます（7日に1回）</p>
+          )}
+        </div>
+
+        {/* Bio */}
+        <div>
+          <label className="block text-sm font-medium mb-1">自己紹介</label>
+          <textarea
+            value={bio}
+            onChange={(e) => setBio(e.target.value)}
+            rows={2}
+            maxLength={200}
+            placeholder="個人開発者です。iOSアプリを作っています。"
+            className={`${inputCls} resize-none`}
+          />
+        </div>
+
+        {/* Platform links */}
+        <div>
+          <label className="block text-sm font-medium mb-3">プラットフォームリンク</label>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="w-7 text-center font-bold text-sm flex-shrink-0">𝕏</span>
+              <input type="url" value={twitterUrl} onChange={(e) => setTwitterUrl(e.target.value)}
+                placeholder="https://x.com/yourhandle" className={inputCls} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-7 text-center text-lg flex-shrink-0">🐙</span>
+              <input type="url" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)}
+                placeholder="https://github.com/yourname" className={inputCls} />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-7 text-center text-lg flex-shrink-0">🌐</span>
+              <input type="url" value={websiteUrl} onChange={(e) => setWebsiteUrl(e.target.value)}
+                placeholder="https://yoursite.com" className={inputCls} />
+            </div>
           </div>
-          <button
-            onClick={handleSaveProfile}
-            disabled={saving || !canChangeUsername()}
-            className="px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
-          >
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
+          <p className="text-xs text-zinc-400">{user?.email}</p>
+          <button onClick={handleSaveProfile} disabled={saving}
+            className="px-5 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-50">
             {saving ? "保存中..." : "保存"}
           </button>
-        </div>
-        {!canChangeUsername() && (
-          <p className="text-xs text-amber-500 mb-2">
-            あと{daysUntilChange()}日後に変更できます（7日に1回まで）
-          </p>
-        )}
-        <div className="flex items-center gap-2">
-          <p className="text-xs text-zinc-400">{user?.email}</p>
-          {badge && <Badge badge={badge} />}
         </div>
       </section>
 
@@ -128,7 +175,7 @@ export default function ProfilePage() {
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
             投稿したアプリ（{apps.length}）
           </h2>
-          <Link href="/submit" className="text-sm font-medium text-zinc-900 dark:text-zinc-100 hover:underline">
+          <Link href="/submit" className="text-sm font-medium hover:underline">
             + 新しいアプリを追加
           </Link>
         </div>
@@ -147,7 +194,14 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium truncate">{app.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium truncate">{app.name}</p>
+                    {app.status && app.status !== "released" && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${app.status === "beta" ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300" : "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300"}`}>
+                        {app.status === "beta" ? "β" : "開発中"}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-zinc-400 truncate">{app.tagline}</p>
                 </div>
                 <div className="flex items-center gap-1 text-xs text-zinc-400 mr-2">

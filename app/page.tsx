@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
-import Badge from "@/components/Badge";
+import Badge, { isPremiumBadge } from "@/components/Badge";
+import type { BadgeType } from "@/components/Badge";
 
 type App = {
   id: string;
@@ -49,6 +50,10 @@ export default function HomePage() {
             selectedTags.every((t) => a.tags?.includes(t))
           );
         }
+        // Gold/Platinumを上位に
+        const boostScore = (a: App) =>
+          isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
+        filtered.sort((a, b) => boostScore(b) - boostScore(a));
         setApps(filtered);
         setLoading(false);
       });

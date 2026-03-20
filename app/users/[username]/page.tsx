@@ -10,6 +10,10 @@ type Profile = {
   id: string;
   username: string;
   badge: string | null;
+  bio: string | null;
+  twitter_url: string | null;
+  github_url: string | null;
+  website_url: string | null;
 };
 
 type App = {
@@ -29,7 +33,7 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("aa_profiles").select("id, username, badge")
+    supabase.from("aa_profiles").select("id, username, badge, bio, twitter_url, github_url, website_url")
       .eq("username", decodeURIComponent(username)).single()
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
@@ -63,9 +67,15 @@ export default function UserProfilePage() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold">{profile.username}</h1>
-            {profile.badge && <Badge badge={profile.badge as "master" | "gold" | "silver" | "bronze"} />}
+            {profile.badge && <Badge badge={profile.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} />}
           </div>
-          <p className="text-sm text-zinc-400">{apps.length}個のアプリを投稿</p>
+          {profile.bio && <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">{profile.bio}</p>}
+          <div className="flex items-center gap-3 flex-wrap">
+            <p className="text-sm text-zinc-400">{apps.length}個のアプリを投稿</p>
+            {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors font-bold">𝕏</a>}
+            {profile.github_url && <a href={profile.github_url} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">GitHub</a>}
+            {profile.website_url && <a href={profile.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">🌐 Web</a>}
+          </div>
         </div>
       </div>
 
