@@ -219,6 +219,9 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
               <div className="flex flex-wrap gap-1">
+                {(!app.status || app.status === "released") && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
+                )}
                 {app.status === "beta" && (
                   <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-medium">β ベータ版</span>
                 )}
