@@ -35,6 +35,8 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState("");
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -83,14 +85,20 @@ export default function ProfilePage() {
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
+    setAvatarError("");
+    setAvatarUploading(true);
     const ext = file.name.split(".").pop();
     const path = `${user.id}/avatar.${ext}`;
     const { error } = await supabase.storage.from("aa-apps").upload(path, file, { upsert: true });
-    if (!error) {
+    if (error) {
+      setAvatarError("アップロードに失敗しました: " + error.message);
+    } else {
       const { data } = supabase.storage.from("aa-apps").getPublicUrl(path);
-      setAvatarUrl(data.publicUrl);
+      const urlWithCache = `${data.publicUrl}?t=${Date.now()}`;
+      setAvatarUrl(urlWithCache);
       await supabase.from("aa_profiles").upsert({ id: user.id, avatar_url: data.publicUrl });
     }
+    setAvatarUploading(false);
   };
 
   const handleSaveProfile = async () => {
@@ -129,15 +137,22 @@ export default function ProfilePage() {
         {/* Avatar */}
         <div className="flex items-center gap-4">
           <button type="button" onClick={() => avatarRef.current?.click()}
-            className="w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 transition-colors flex-shrink-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+            disabled={avatarUploading}
+            className="relative w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 transition-colors flex-shrink-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800 disabled:opacity-70">
             {avatarUrl
               ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
               : <span className="text-2xl text-zinc-400">{username ? username[0].toUpperCase() : "?"}</span>
             }
+            {avatarUploading && (
+              <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              </div>
+            )}
           </button>
           <div>
             <p className="text-sm font-medium">プロフィール写真</p>
-            <p className="text-xs text-zinc-400">クリックして変更</p>
+            <p className="text-xs text-zinc-400">{avatarUploading ? "アップロード中..." : "クリックして変更"}</p>
+            {avatarError && <p className="text-xs text-red-500 mt-1">{avatarError}</p>}
           </div>
           <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
         </div>
