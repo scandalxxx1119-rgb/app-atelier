@@ -124,7 +124,7 @@ export default function ProfilePage() {
   };
 
   const handleDelete = async (appId: string) => {
-    await supabase.from("aa_apps").delete().eq("id", appId);
+    await supabase.from("aa_apps").delete().eq("id", appId).eq("user_id", user!.id);
     setApps((prev) => prev.filter((a) => a.id !== appId));
     setDeleteId(null);
   };
