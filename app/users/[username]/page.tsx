@@ -14,6 +14,7 @@ type Profile = {
   twitter_url: string | null;
   github_url: string | null;
   website_url: string | null;
+  avatar_url: string | null;
 };
 
 type App = {
@@ -33,7 +34,7 @@ export default function UserProfilePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.from("aa_profiles").select("id, username, badge, bio, twitter_url, github_url, website_url")
+    supabase.from("aa_profiles").select("id, username, badge, bio, twitter_url, github_url, website_url, avatar_url")
       .eq("username", decodeURIComponent(username)).single()
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
@@ -61,8 +62,11 @@ export default function UserProfilePage() {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       <div className="flex items-center gap-4 mb-10">
-        <div className="w-16 h-16 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-2xl font-bold text-zinc-400">
-          {profile.username[0].toUpperCase()}
+        <div className="w-16 h-16 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-2xl font-bold text-zinc-400 flex-shrink-0">
+          {profile.avatar_url
+            ? <img src={profile.avatar_url} alt={profile.username} className="w-full h-full object-cover" />
+            : profile.username[0].toUpperCase()
+          }
         </div>
         <div>
           <div className="flex items-center gap-2 mb-1">

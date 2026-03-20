@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
@@ -22,7 +22,9 @@ export default function ProfilePage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [username, setUsername] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [bio, setBio] = useState("");
+  const avatarRef = useRef<HTMLInputElement>(null);
   const [twitterUrl, setTwitterUrl] = useState("");
   const [githubUrl, setGithubUrl] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
@@ -40,7 +42,7 @@ export default function ProfilePage() {
 
       const [profileRes, appsRes] = await Promise.all([
         supabase.from("aa_profiles")
-          .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url")
+          .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
         supabase.from("aa_apps")
           .select("id, name, tagline, icon_url, likes_count, status")
@@ -48,6 +50,7 @@ export default function ProfilePage() {
       ]);
 
       setUsername(profileRes.data?.username ?? "");
+      setAvatarUrl(profileRes.data?.avatar_url ?? null);
       setBadge(profileRes.data?.badge ?? null);
       setUsernameUpdatedAt(profileRes.data?.username_updated_at ?? null);
       setBio(profileRes.data?.bio ?? "");
@@ -69,6 +72,19 @@ export default function ProfilePage() {
     if (!usernameUpdatedAt) return 0;
     const days = (Date.now() - new Date(usernameUpdatedAt).getTime()) / (1000 * 60 * 60 * 24);
     return Math.ceil(7 - days);
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    const ext = file.name.split(".").pop();
+    const path = `${user.id}/avatar.${ext}`;
+    const { error } = await supabase.storage.from("aa-apps").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("aa-apps").getPublicUrl(path);
+      setAvatarUrl(data.publicUrl);
+      await supabase.from("aa_profiles").upsert({ id: user.id, avatar_url: data.publicUrl });
+    }
   };
 
   const handleSaveProfile = async () => {
@@ -104,6 +120,22 @@ export default function ProfilePage() {
 
       {/* Profile */}
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-5">
+        {/* Avatar */}
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => avatarRef.current?.click()}
+            className="w-16 h-16 rounded-full overflow-hidden border-2 border-dashed border-zinc-300 dark:border-zinc-600 hover:border-zinc-400 transition-colors flex-shrink-0 flex items-center justify-center bg-zinc-100 dark:bg-zinc-800">
+            {avatarUrl
+              ? <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              : <span className="text-2xl text-zinc-400">{username ? username[0].toUpperCase() : "?"}</span>
+            }
+          </button>
+          <div>
+            <p className="text-sm font-medium">プロフィール写真</p>
+            <p className="text-xs text-zinc-400">クリックして変更</p>
+          </div>
+          <input ref={avatarRef} type="file" accept="image/*" onChange={handleAvatarChange} className="hidden" />
+        </div>
+
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">プロフィール</h2>
           <div className="flex items-center gap-3">
