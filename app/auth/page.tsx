@@ -21,23 +21,73 @@ export default function AuthPage() {
 
     try {
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
         if (error) throw error;
-        if (data.user) {
-          await supabase.from("aa_profiles").upsert({
-            id: data.user.id,
-            username: username || email.split("@")[0],
-          });
+
+        // メール確認不要の場合はすぐにログインできる
+        if (data.session) {
+          // プロフィール作成
+          if (data.user) {
+            await supabase.from("aa_profiles").upsert(
+              {
+                id: data.user.id,
+                username: username.trim() || email.split("@")[0],
+              },
+              { onConflict: "id" }
+            );
+          }
+          router.push("/");
+          router.refresh();
+        } else {
+          // メール確認が必要な場合
+          setDone(true);
         }
-        setDone(true);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
         if (error) throw error;
+
+        // プロフィールがなければ作成
+        if (data.user) {
+          const { data: profile } = await supabase
+            .from("aa_profiles")
+            .select("id")
+            .eq("id", data.user.id)
+            .maybeSingle();
+
+          if (!profile) {
+            await supabase.from("aa_profiles").upsert(
+              {
+                id: data.user.id,
+                username: email.split("@")[0],
+              },
+              { onConflict: "id" }
+            );
+          }
+        }
+
         router.push("/");
         router.refresh();
       }
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "エラーが発生しました");
+      const msg = err instanceof Error ? err.message : "エラーが発生しました";
+      // エラーメッセージを日本語に
+      if (msg.includes("Invalid login credentials")) {
+        setError("メールアドレスまたはパスワードが間違っています");
+      } else if (msg.includes("Email not confirmed")) {
+        setError("メールの確認が必要です。受信箱を確認してください");
+      } else if (msg.includes("User already registered")) {
+        setError("このメールアドレスはすでに登録されています");
+      } else if (msg.includes("Password should be at least")) {
+        setError("パスワードは6文字以上にしてください");
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -46,9 +96,18 @@ export default function AuthPage() {
   if (done) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center space-y-3">
-          <p className="text-xl font-medium">確認メールを送信しました</p>
-          <p className="text-zinc-500 text-sm">メール内のリンクをクリックして登録を完了してください</p>
+        <div className="text-center space-y-3 px-4">
+          <p className="text-3xl">📧</p>
+          <p className="text-xl font-semibold">確認メールを送信しました</p>
+          <p className="text-zinc-500 text-sm">
+            メール内のリンクをクリックして登録を完了してください
+          </p>
+          <button
+            onClick={() => { setDone(false); setMode("login"); }}
+            className="mt-4 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 underline"
+          >
+            ログイン画面に戻る
+          </button>
         </div>
       </div>
     );
@@ -57,36 +116,65 @@ export default function AuthPage() {
   return (
     <div className="flex items-center justify-center min-h-[60vh] px-4">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">
-          {mode === "login" ? "ログイン" : "新規登録"}
-        </h1>
+        {/* Tab */}
+        <div className="flex mb-6 border-b border-zinc-200 dark:border-zinc-800">
+          <button
+            onClick={() => { setMode("login"); setError(""); }}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              mode === "login"
+                ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            }`}
+          >
+            ログイン
+          </button>
+          <button
+            onClick={() => { setMode("signup"); setError(""); }}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+              mode === "signup"
+                ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white"
+                : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+            }`}
+          >
+            新規登録
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {mode === "signup" && (
             <div>
-              <label className="block text-sm font-medium mb-1">ユーザー名</label>
+              <label className="block text-sm font-medium mb-1">
+                ユーザー名
+              </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="your_name"
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                maxLength={30}
+                className="w-full px-3 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm"
               />
             </div>
           )}
+
           <div>
-            <label className="block text-sm font-medium mb-1">メールアドレス</label>
+            <label className="block text-sm font-medium mb-1">
+              メールアドレス
+            </label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full px-3 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium mb-1">パスワード</label>
+            <label className="block text-sm font-medium mb-1">
+              パスワード
+            </label>
             <input
               type="password"
               value={password}
@@ -94,38 +182,28 @@ export default function AuthPage() {
               required
               placeholder="6文字以上"
               minLength={6}
-              className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400"
+              className="w-full px-3 py-2.5 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm"
             />
           </div>
 
-          {error && <p className="text-red-500 text-sm">{error}</p>}
+          {error && (
+            <div className="px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900">
+              <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+            </div>
+          )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+            className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity disabled:opacity-50 text-sm"
           >
-            {loading ? "..." : mode === "login" ? "ログイン" : "登録する"}
+            {loading
+              ? "処理中..."
+              : mode === "login"
+              ? "ログイン"
+              : "登録する"}
           </button>
         </form>
-
-        <p className="text-center text-sm text-zinc-500 mt-6">
-          {mode === "login" ? (
-            <>
-              アカウントがない？{" "}
-              <button onClick={() => setMode("signup")} className="text-zinc-900 dark:text-zinc-100 font-medium hover:underline">
-                新規登録
-              </button>
-            </>
-          ) : (
-            <>
-              すでにアカウントがある？{" "}
-              <button onClick={() => setMode("login")} className="text-zinc-900 dark:text-zinc-100 font-medium hover:underline">
-                ログイン
-              </button>
-            </>
-          )}
-        </p>
       </div>
     </div>
   );
