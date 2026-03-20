@@ -74,6 +74,7 @@ export default function AppDetailPage() {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applying, setApplying] = useState(false);
   const [totalApplicants, setTotalApplicants] = useState(0);
+  const [deletingComment, setDeletingComment] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -169,6 +170,14 @@ export default function AppDetailPage() {
     }
     setApplyOpen(false);
     setApplying(false);
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!user) return;
+    setDeletingComment(commentId);
+    await supabase.from("aa_comments").delete().eq("id", commentId).eq("user_id", user.id);
+    setComments((prev) => prev.filter((c) => c.id !== commentId));
+    setDeletingComment(null);
   };
 
   const handleShare = async () => {
@@ -371,14 +380,23 @@ export default function AppDetailPage() {
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">コメント（{comments.length}）</h2>
         <div className="space-y-4 mb-6">
           {comments.map((c) => (
-            <div key={c.id} className="flex gap-3">
+            <div key={c.id} className="flex gap-3 group">
               <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-medium flex-shrink-0">
                 {(commentProfiles[c.user_id] ?? "?")[0].toUpperCase()}
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="text-xs text-zinc-400 mb-0.5">{commentProfiles[c.user_id] ?? "anonymous"}</p>
                 <p className="text-sm text-zinc-700 dark:text-zinc-300">{(c as { content: string }).content}</p>
               </div>
+              {user?.id === c.user_id && (
+                <button
+                  onClick={() => handleDeleteComment(c.id)}
+                  disabled={deletingComment === c.id}
+                  className="opacity-0 group-hover:opacity-100 text-xs text-zinc-400 hover:text-red-500 transition-all flex-shrink-0 disabled:opacity-50"
+                >
+                  削除
+                </button>
+              )}
             </div>
           ))}
           {comments.length === 0 && <p className="text-sm text-zinc-400">コメントはまだありません</p>}

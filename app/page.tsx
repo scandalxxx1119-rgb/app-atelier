@@ -35,6 +35,7 @@ export default function HomePage() {
   const [sort, setSort] = useState("created_at");
   const [tab, setTab] = useState<"all" | "mine">("all");
   const [user, setUser] = useState<User | null>(null);
+  const [displayCount, setDisplayCount] = useState(18);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -83,6 +84,8 @@ export default function HomePage() {
       setLoading(false);
     });
   }, [sort, search, selectedTags, tab, user]);
+
+  useEffect(() => { setDisplayCount(18); }, [sort, search, selectedTags, tab]);
 
   const toggleTag = (tag: string) =>
     setSelectedTags((prev) =>
@@ -192,8 +195,9 @@ export default function HomePage() {
           </Link>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {apps.map((app) => (
+          {apps.slice(0, displayCount).map((app) => (
             <Link key={app.id} href={`/apps/${app.id}`}
               className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
               <div className="flex items-start gap-3 mb-3">
@@ -240,6 +244,17 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
+        {apps.length > displayCount && (
+          <div className="mt-8 text-center">
+            <button
+              onClick={() => setDisplayCount((n) => n + 18)}
+              className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              もっと見る（残り {apps.length - displayCount} 件）
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   );
