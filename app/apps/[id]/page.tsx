@@ -51,6 +51,15 @@ type Application = {
   message: string | null;
 };
 
+type AppUpdate = {
+  id: string;
+  version: string | null;
+  title: string;
+  content: string | null;
+  created_at: string;
+  user_id: string;
+};
+
 function getYoutubeId(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\n?#]+)/);
   return match ? match[1] : null;
@@ -75,6 +84,12 @@ export default function AppDetailPage() {
   const [applying, setApplying] = useState(false);
   const [totalApplicants, setTotalApplicants] = useState(0);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
+  const [updates, setUpdates] = useState<AppUpdate[]>([]);
+  const [updateTitle, setUpdateTitle] = useState("");
+  const [updateVersion, setUpdateVersion] = useState("");
+  const [updateContent, setUpdateContent] = useState("");
+  const [updateFormOpen, setUpdateFormOpen] = useState(false);
+  const [postingUpdate, setPostingUpdate] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -110,6 +125,11 @@ export default function AppDetailPage() {
     // 申請数
     supabase.from("aa_tester_applications").select("id", { count: "exact" }).eq("app_id", id)
       .then(({ count }) => setTotalApplicants(count ?? 0));
+
+    // アップデート
+    supabase.from("aa_app_updates").select("*").eq("app_id", id)
+      .order("created_at", { ascending: false })
+      .then(({ data }) => { if (data) setUpdates(data as AppUpdate[]); });
   }, [id]);
 
   useEffect(() => {
@@ -170,6 +190,33 @@ export default function AppDetailPage() {
     }
     setApplyOpen(false);
     setApplying(false);
+  };
+
+  const handlePostUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !updateTitle.trim()) return;
+    setPostingUpdate(true);
+    const { data } = await supabase.from("aa_app_updates").insert({
+      app_id: id,
+      user_id: user.id,
+      title: updateTitle.trim(),
+      version: updateVersion.trim() || null,
+      content: updateContent.trim() || null,
+    }).select("*").single();
+    if (data) {
+      setUpdates((prev) => [data as AppUpdate, ...prev]);
+      setUpdateTitle("");
+      setUpdateVersion("");
+      setUpdateContent("");
+      setUpdateFormOpen(false);
+    }
+    setPostingUpdate(false);
+  };
+
+  const handleDeleteUpdate = async (updateId: string) => {
+    if (!user) return;
+    await supabase.from("aa_app_updates").delete().eq("id", updateId).eq("user_id", user.id);
+    setUpdates((prev) => prev.filter((u) => u.id !== updateId));
   };
 
   const handleDeleteComment = async (commentId: string) => {
@@ -372,6 +419,85 @@ export default function AppDetailPage() {
         <div className="mb-10">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">About</h2>
           <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">{app.description}</p>
+        </div>
+      )}
+
+      {/* Updates */}
+      {(updates.length > 0 || isOwner) && (
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">
+              アップデート（{updates.length}）
+            </h2>
+            {isOwner && !updateFormOpen && (
+              <button onClick={() => setUpdateFormOpen(true)}
+                className="text-xs font-medium text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 border border-zinc-200 dark:border-zinc-700 px-3 py-1 rounded-lg transition-colors">
+                + 投稿する
+              </button>
+            )}
+          </div>
+
+          {updateFormOpen && (
+            <form onSubmit={handlePostUpdate} className="mb-6 p-4 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 space-y-3">
+              <div className="flex gap-2">
+                <input type="text" value={updateVersion} onChange={(e) => setUpdateVersion(e.target.value)}
+                  placeholder="v1.2.0（任意）"
+                  className="w-28 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400" />
+                <input type="text" value={updateTitle} onChange={(e) => setUpdateTitle(e.target.value)}
+                  placeholder="タイトル（例: バグ修正・新機能追加）" required
+                  className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400" />
+              </div>
+              <textarea value={updateContent} onChange={(e) => setUpdateContent(e.target.value)}
+                rows={3} placeholder="変更内容の詳細（任意）"
+                className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-none" />
+              <div className="flex gap-2 justify-end">
+                <button type="button" onClick={() => setUpdateFormOpen(false)}
+                  className="px-4 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors">
+                  キャンセル
+                </button>
+                <button type="submit" disabled={postingUpdate || !updateTitle.trim()}
+                  className="px-4 py-1.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity disabled:opacity-40">
+                  {postingUpdate ? "投稿中..." : "投稿する"}
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="space-y-4">
+            {updates.map((u) => (
+              <div key={u.id} className="flex gap-3 group">
+                <div className="flex flex-col items-center">
+                  <div className="w-2 h-2 rounded-full bg-zinc-300 dark:bg-zinc-600 mt-1.5 flex-shrink-0" />
+                  <div className="w-px flex-1 bg-zinc-100 dark:bg-zinc-800 mt-1" />
+                </div>
+                <div className="pb-4 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    {u.version && (
+                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-600 dark:text-zinc-300">
+                        {u.version}
+                      </span>
+                    )}
+                    <span className="text-sm font-semibold">{u.title}</span>
+                    <span className="text-xs text-zinc-400 ml-auto">
+                      {new Date(u.created_at).toLocaleDateString("ja-JP")}
+                    </span>
+                    {isOwner && (
+                      <button onClick={() => handleDeleteUpdate(u.id)}
+                        className="opacity-0 group-hover:opacity-100 text-xs text-zinc-400 hover:text-red-500 transition-all">
+                        削除
+                      </button>
+                    )}
+                  </div>
+                  {u.content && (
+                    <p className="text-sm text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap">{u.content}</p>
+                  )}
+                </div>
+              </div>
+            ))}
+            {updates.length === 0 && (
+              <p className="text-sm text-zinc-400">まだアップデートはありません</p>
+            )}
+          </div>
         </div>
       )}
 
