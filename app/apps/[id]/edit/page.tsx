@@ -38,6 +38,9 @@ export default function EditAppPage() {
   const [youtubeUrl, setYoutubeUrl] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [status, setStatus] = useState("released");
+  const [testerEnabled, setTesterEnabled] = useState(false);
+  const [testerSlots, setTesterSlots] = useState(5);
+  const [testerPoints, setTesterPoints] = useState(10);
 
   const [iconPreview, setIconPreview] = useState("");
   const [iconFile, setIconFile] = useState<File | null>(null);
@@ -66,6 +69,9 @@ export default function EditAppPage() {
       setYoutubeUrl(app.youtube_url ?? "");
       setSelectedTags(app.tags ?? []);
       setStatus(app.status ?? "released");
+      setTesterEnabled((app.tester_slots ?? 0) > 0);
+      setTesterSlots(app.tester_slots > 0 ? app.tester_slots : 5);
+      setTesterPoints(app.tester_reward_points > 0 ? app.tester_reward_points : 10);
       setIconPreview(app.icon_url ?? "");
       setScreenshotPreviews(app.screenshot_urls ?? []);
       setScreenshotFiles((app.screenshot_urls ?? []).map(() => null));
@@ -138,6 +144,8 @@ export default function EditAppPage() {
         screenshot_urls: finalScreenshots.length > 0 ? finalScreenshots : null,
         tags: selectedTags.length > 0 ? selectedTags : null,
         status,
+        tester_slots: testerEnabled ? testerSlots : 0,
+        tester_reward_points: testerEnabled ? testerPoints : 0,
       }).eq("id", id).eq("user_id", user.id);
 
       if (error) throw error;
@@ -252,6 +260,49 @@ export default function EditAppPage() {
             <div className="flex items-center gap-2"><span className="w-6 text-center">📺</span><input type="url" value={youtubeUrl} onChange={(e) => setYoutubeUrl(e.target.value)} placeholder="YouTube URL" className={inputCls} /></div>
             <div className="flex items-center gap-2"><span className="w-6 text-center">🐙</span><input type="url" value={githubUrl} onChange={(e) => setGithubUrl(e.target.value)} placeholder="GitHub URL" className={inputCls} /></div>
           </div>
+        </div>
+
+        {/* Tester recruitment */}
+        <div className="border border-zinc-200 dark:border-zinc-700 rounded-xl p-4 space-y-4">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={testerEnabled}
+              onChange={(e) => setTesterEnabled(e.target.checked)}
+              className="w-4 h-4"
+            />
+            <div>
+              <p className="text-sm font-medium">テスター募集を有効にする</p>
+              <p className="text-xs text-zinc-400">申請したユーザーにポイントを付与できます</p>
+            </div>
+          </label>
+
+          {testerEnabled && (
+            <div className="flex gap-4 pl-7">
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-zinc-500 mb-1">募集枠数</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={testerSlots}
+                  onChange={(e) => setTesterSlots(Number(e.target.value))}
+                  className={inputCls}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-zinc-500 mb-1">付与ポイント</label>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={testerPoints}
+                  onChange={(e) => setTesterPoints(Number(e.target.value))}
+                  className={inputCls}
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
