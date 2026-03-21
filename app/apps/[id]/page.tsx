@@ -285,15 +285,15 @@ export default function AppDetailPage() {
   };
 
   const handleXShare = async () => {
-    const text = `${app?.name} - ${app?.tagline}`;
+    const text = `【${app?.name}】${app?.tagline}\n\nApp Atelierで公開中の個人開発アプリです！気になった方はぜひチェックを👀\n\n#個人開発 #appatelier`;
     window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, "_blank");
-    // 1アプリにつき1回だけ+2pt
+    // 1アプリにつき1回だけ+10pt
     if (user && app) {
       const { data: existing } = await supabase.from("aa_points")
         .select("id").eq("user_id", user.id).eq("app_id", app.id).eq("reason", "Xでシェア").maybeSingle();
       if (!existing) {
-        await supabase.from("aa_points").insert({ user_id: user.id, amount: 2, reason: "Xでシェア", app_id: app.id });
-        setUserPoints((p) => p + 2);
+        await supabase.from("aa_points").insert({ user_id: user.id, amount: 10, reason: "Xでシェア", app_id: app.id });
+        setUserPoints((p) => p + 10);
       }
     }
   };
