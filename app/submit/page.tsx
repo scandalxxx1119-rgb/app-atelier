@@ -354,12 +354,12 @@ export default function SubmitPage() {
               <div className="flex-1">
                 <label className="flex items-center gap-1 text-xs font-medium text-zinc-500 mb-1">
                   付与ポイント
-                  <Tooltip text="テスターとして承認されたユーザーに付与するポイント数です。ポイントはApp Atelier内での活動実績として表示されます（1〜1000pt）。" />
+                  <Tooltip text="テスターとして承認されたユーザーに付与するポイント数です。ポイントはApp Atelier内での活動実績として表示されます（1〜5pt）。" />
                 </label>
                 <input
                   type="number"
                   min={1}
-                  max={1000}
+                  max={5}
                   value={testerPoints}
                   onChange={(e) => setTesterPoints(Number(e.target.value))}
                   className={inputCls}
