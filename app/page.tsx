@@ -115,7 +115,7 @@ export default function HomePage() {
 
       {/* Platinum badge counter */}
       {platinumCount !== null && (
-        <Link href="/auth" className="block mb-8">
+        <Link href="/platinum" className="block mb-8">
           <div className="rounded-xl p-4 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 dark:from-sky-950 dark:via-cyan-950 dark:to-indigo-950 border border-sky-200 dark:border-sky-800">
             <div className="flex items-center justify-between gap-4 flex-wrap">
               <div>
