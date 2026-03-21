@@ -37,6 +37,7 @@ export default function HomePage() {
   const [tab, setTab] = useState<"all" | "mine">("all");
   const [user, setUser] = useState<User | null>(null);
   const [displayCount, setDisplayCount] = useState(18);
+  const [platinumCount, setPlatinumCount] = useState<number | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -44,6 +45,12 @@ export default function HomePage() {
       setUser(session?.user ?? null)
     );
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    supabase.from("aa_profiles").select("id", { count: "exact" })
+      .eq("badge", "platinum")
+      .then(({ count }) => setPlatinumCount(count ?? 0));
   }, []);
 
   useEffect(() => {
@@ -105,6 +112,33 @@ export default function HomePage() {
         <h1 className="text-3xl font-bold mb-2">App Atelier</h1>
         <p className="text-zinc-500 dark:text-zinc-400">個人開発者が作ったアプリを発見・応援しよう</p>
       </div>
+
+      {/* Platinum badge counter */}
+      {platinumCount !== null && (
+        <Link href="/auth" className="block mb-8">
+          <div className="rounded-xl p-4 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 dark:from-sky-950 dark:via-cyan-950 dark:to-indigo-950 border border-sky-200 dark:border-sky-800">
+            <div className="flex items-center justify-between gap-4 flex-wrap">
+              <div>
+                <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-0.5">先着100名限定特典</p>
+                <p className="font-bold text-zinc-900 dark:text-zinc-100">
+                  PLATINUM会員
+                  <span className="ml-2 text-2xl text-sky-600 dark:text-sky-400">{platinumCount}</span>
+                  <span className="text-zinc-400 dark:text-zinc-500 font-normal text-sm"> / 100 人</span>
+                </p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">今すぐ登録すると PLATINUMバッジがもらえます</p>
+              </div>
+              <div className="flex-shrink-0 text-right">
+                <div className="flex items-center gap-1 mb-1">
+                  {[...Array(10)].map((_, i) => (
+                    <div key={i} className={`h-2 w-6 rounded-full ${i < Math.ceil(platinumCount / 10) ? "bg-sky-400 dark:bg-sky-500" : "bg-zinc-200 dark:bg-zinc-700"}`} />
+                  ))}
+                </div>
+                <p className="text-xs text-sky-600 dark:text-sky-400 font-bold">残り {100 - platinumCount} 枠</p>
+              </div>
+            </div>
+          </div>
+        </Link>
+      )}
 
       {/* Tabs */}
       <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-6">
