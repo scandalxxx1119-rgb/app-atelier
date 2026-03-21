@@ -41,7 +41,8 @@ export default function HomePage() {
   const [platformOpen, setPlatformOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
-  const [displayCount, setDisplayCount] = useState(18);
+  const [currentPage, setCurrentPage] = useState(1);
+  const PAGE_SIZE = 10;
   const [platinumCount, setPlatinumCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -114,7 +115,7 @@ export default function HomePage() {
     fetchApps();
   }, [sort, search, selectedPlatforms, selectedCategories, tab, user]);
 
-  useEffect(() => { setDisplayCount(18); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
+  useEffect(() => { setCurrentPage(1); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
 
   const togglePlatform = (tag: string) =>
     setSelectedPlatforms((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
@@ -267,7 +268,7 @@ export default function HomePage() {
       ) : (
         <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {apps.slice(0, displayCount).map((app) => (
+          {apps.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((app) => (
             <Link key={app.id} href={`/apps/${app.id}`}
               className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
               <div className="flex items-start gap-3 mb-3">
@@ -317,13 +318,24 @@ export default function HomePage() {
             </Link>
           ))}
         </div>
-        {apps.length > displayCount && (
-          <div className="mt-8 text-center">
+        {apps.length > PAGE_SIZE && (
+          <div className="mt-8 flex items-center justify-center gap-3">
             <button
-              onClick={() => setDisplayCount((n) => n + 18)}
-              className="px-6 py-2.5 rounded-full border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              onClick={() => { setCurrentPage((p) => p - 1); window.scrollTo(0, 0); }}
+              disabled={currentPage === 1}
+              className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              もっと見る（残り {apps.length - displayCount} 件）
+              ← 前へ
+            </button>
+            <span className="text-sm text-zinc-500">
+              {currentPage} / {Math.ceil(apps.length / PAGE_SIZE)}ページ
+            </span>
+            <button
+              onClick={() => { setCurrentPage((p) => p + 1); window.scrollTo(0, 0); }}
+              disabled={currentPage >= Math.ceil(apps.length / PAGE_SIZE)}
+              className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              次へ →
             </button>
           </div>
         )}
