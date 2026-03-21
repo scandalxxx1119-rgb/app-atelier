@@ -134,6 +134,14 @@ export default function SubmitPage() {
         setSubmitting(false);
         return;
       }
+
+      // 新規アカウント（登録24時間以内）は1件まで
+      const accountAge = Date.now() - new Date(user.created_at).getTime();
+      if (accountAge < 24 * 60 * 60 * 1000 && (count ?? 0) >= 1) {
+        setError("アカウント登録から24時間以内は1件までしか投稿できません");
+        setSubmitting(false);
+        return;
+      }
       let iconUrl: string | null = null;
       if (iconFile) {
         const ext = iconFile.name.split(".").pop();
