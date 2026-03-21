@@ -158,21 +158,19 @@ export default function HomeClient({
       {tab === "all" && apps.some((a) => a.isBoosted) && (
         <div className="mb-8">
           <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-3">🚀 注目アプリ</p>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {apps.filter((a) => a.isBoosted).map((app) => (
               <Link key={app.id} href={`/apps/${app.id}`}
-                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 hover:border-amber-400 dark:hover:border-amber-600 transition-colors">
+                className="flex-shrink-0 w-24 flex flex-col items-center gap-1.5 p-3 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 hover:border-amber-400 dark:hover:border-amber-600 transition-colors text-center">
                 {app.icon_url ? (
-                  <img src={app.icon_url} alt={app.name} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                  <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover" />
                 ) : (
-                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm font-bold text-amber-400 flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-lg font-bold text-amber-400">
                     {app.name[0]}
                   </div>
                 )}
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate max-w-28">{app.name}</p>
-                  <p className="text-xs text-zinc-400 truncate max-w-28">{app.aa_profiles?.username ?? "anonymous"}</p>
-                </div>
+                <p className="text-xs font-medium leading-tight line-clamp-2 w-full">{app.name}</p>
+                <p className="text-[10px] text-zinc-400 truncate w-full">{app.aa_profiles?.username ?? "anonymous"}</p>
               </Link>
             ))}
           </div>
@@ -306,9 +304,6 @@ export default function HomeClient({
                   </div>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
                   <div className="flex flex-wrap gap-1">
-                    {app.isBoosted && (
-                      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚀 注目</span>
-                    )}
                     {(!app.status || app.status === "released") && (
                       <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
                     )}
