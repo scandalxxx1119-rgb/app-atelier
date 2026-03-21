@@ -50,6 +50,7 @@ export default function SubmitPage() {
   const [isPremium, setIsPremium] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [agreed, setAgreed] = useState(false);
   const [error, setError] = useState("");
   const [submittedApp, setSubmittedApp] = useState<{ id: string; name: string; tagline: string } | null>(null);
 
@@ -409,7 +410,20 @@ export default function SubmitPage() {
 
         {error && <p className="text-red-500 text-sm">{error}</p>}
 
-        <button type="submit" disabled={submitting}
+        {/* 誓約チェックボックス */}
+        <label className="flex items-start gap-3 p-4 rounded-lg border border-zinc-200 dark:border-zinc-700 cursor-pointer hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+          <input
+            type="checkbox"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            className="mt-0.5 w-4 h-4 flex-shrink-0 accent-zinc-900 dark:accent-white cursor-pointer"
+          />
+          <span className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
+            このアプリはマルウェア・詐欺・フィッシング等の悪意ある用途を持たない正当なアプリであることを誓います。また、<a href="/terms" target="_blank" className="underline text-zinc-900 dark:text-zinc-100">利用規約</a>を読み、同意します。
+          </span>
+        </label>
+
+        <button type="submit" disabled={submitting || !agreed}
           className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity disabled:opacity-50">
           {submitting ? "投稿中..." : "投稿する"}
         </button>
