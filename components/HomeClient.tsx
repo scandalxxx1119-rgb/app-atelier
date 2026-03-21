@@ -43,11 +43,14 @@ function mapRpcRows(data: RpcRow[]): App[] {
 export default function HomeClient({
   initialApps,
   platinumCount,
+  platinumLimit = 150,
 }: {
   initialApps: App[];
   platinumCount: number;
+  platinumLimit?: number;
 }) {
   const [apps, setApps] = useState<App[]>(initialApps);
+  // サーバーデータがない場合はクライアントでフェッチが必要
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
@@ -59,7 +62,8 @@ export default function HomeClient({
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const isInitialRender = useRef(true);
+  // サーバーデータがある場合のみ初回フェッチをスキップ
+  const isInitialRender = useRef(initialApps.length > 0);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -72,7 +76,7 @@ export default function HomeClient({
   const selectedTags = [...selectedPlatforms, ...selectedCategories];
 
   useEffect(() => {
-    // 初回レンダリングはサーバーデータを使うのでスキップ
+    // サーバーデータがある場合は初回マウントをスキップ
     if (isInitialRender.current) {
       isInitialRender.current = false;
       return;
@@ -134,21 +138,21 @@ export default function HomeClient({
         <div className="rounded-xl p-4 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 dark:from-sky-950 dark:via-cyan-950 dark:to-indigo-950 border border-sky-200 dark:border-sky-800">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-0.5">先着100名限定特典</p>
+              <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-0.5">先着{platinumLimit}名限定特典</p>
               <p className="font-bold text-zinc-900 dark:text-zinc-100">
                 PLATINUM会員
                 <span className="ml-2 text-2xl text-sky-600 dark:text-sky-400">{platinumCount}</span>
-                <span className="text-zinc-400 dark:text-zinc-500 font-normal text-sm"> / 100 人</span>
+                <span className="text-zinc-400 dark:text-zinc-500 font-normal text-sm"> / {platinumLimit} 人</span>
               </p>
               <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">今すぐ登録すると PLATINUMバッジがもらえます</p>
             </div>
             <div className="flex-shrink-0 text-right">
               <div className="flex items-center gap-1 mb-1">
                 {[...Array(10)].map((_, i) => (
-                  <div key={i} className={`h-2 w-6 rounded-full ${i < Math.ceil(platinumCount / 10) ? "bg-sky-400 dark:bg-sky-500" : "bg-zinc-200 dark:bg-zinc-700"}`} />
+                  <div key={i} className={`h-2 w-6 rounded-full ${i < Math.ceil((platinumCount / platinumLimit) * 10) ? "bg-sky-400 dark:bg-sky-500" : "bg-zinc-200 dark:bg-zinc-700"}`} />
                 ))}
               </div>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-bold">残り {100 - platinumCount} 枠</p>
+              <p className="text-xs text-sky-600 dark:text-sky-400 font-bold">残り {platinumLimit - platinumCount} 枠</p>
             </div>
           </div>
         </div>
