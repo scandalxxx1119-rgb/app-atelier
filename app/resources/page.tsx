@@ -41,6 +41,9 @@ export default function ResourcesPage() {
           <Link href="/" className="text-sm font-semibold text-white underline underline-offset-2">
             サービスを見る →
           </Link>
+          <Link href="/points" className="text-sm font-semibold text-white underline underline-offset-2">
+            ポイント制度 →
+          </Link>
         </div>
       </section>
 
