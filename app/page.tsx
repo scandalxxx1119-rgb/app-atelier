@@ -1,12 +1,11 @@
 import { createClient } from "@supabase/supabase-js";
 import HomeClient from "@/components/HomeClient";
-import type { App } from "@/components/HomeClient";
+import { PLATINUM_LIMIT } from "@/lib/types";
+import type { App } from "@/lib/types";
 
 export const revalidate = 60;
 
 type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null };
-
-export const PLATINUM_LIMIT = 150;
 
 export default async function HomePage() {
   const supabase = createClient(
@@ -35,7 +34,6 @@ export default async function HomePage() {
       aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
     }));
   } else {
-    // RPCが失敗した場合は直接クエリで取得
     const { data: fallback } = await supabase
       .from("aa_apps")
       .select("*")
