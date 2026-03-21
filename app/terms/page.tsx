@@ -8,20 +8,23 @@ export default function TermsPage() {
 
         <section>
           <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">1. はじめに</h2>
-          <p>
+          <p className="mb-2">
             本利用規約（以下「本規約」）は、App Atelier（以下「本サービス」）の利用条件を定めるものです。
-            ユーザーは本規約に同意した上で本サービスをご利用ください。
-            本サービスを利用した時点で、本規約に同意したものとみなします。
+            本規約は民法上の定型約款に該当し、本サービスを利用した時点で本規約に同意したものとみなします。
+          </p>
+          <p>
+            本規約は予告なく変更される場合があります。変更後も本サービスを利用し続けた場合、変更後の規約に同意したものとみなします。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">2. アカウント</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">2. 利用資格・アカウント</h2>
           <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
+            <li>本サービスは13歳以上の方を対象としています。13歳未満の方はご利用いただけません</li>
+            <li>18歳未満の方は保護者の同意を得た上でご利用ください</li>
             <li>登録は実在するメールアドレスで行ってください</li>
-            <li>アカウントの管理はご自身の責任で行ってください</li>
+            <li>アカウントの管理・セキュリティはご自身の責任で行ってください</li>
             <li>1人1アカウントを原則とします</li>
-            <li>未成年の方は保護者の同意を得た上でご利用ください</li>
           </ul>
         </section>
 
@@ -88,7 +91,18 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. 免責事項</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. 反社会的勢力の排除</h2>
+          <p className="mb-2">ユーザーは、現在および将来にわたって以下のいずれにも該当しないことを表明・保証します。</p>
+          <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
+            <li>暴力団・暴力団員・暴力団関係企業・総会屋・社会運動標榜ゴロ・特殊知能暴力集団その他これらに準じる者（以下「反社会的勢力」）</li>
+            <li>反社会的勢力が経営を支配または実質的に関与していると認められる者</li>
+            <li>反社会的勢力と資金提供その他を通じて関与している者</li>
+          </ul>
+          <p className="mt-2">上記に該当することが判明した場合、予告なくアカウントを停止・削除します。</p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. 免責事項・損害賠償</h2>
           <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
             <li>本サービスは現状有姿で提供します。動作の完全性・継続性を保証しません</li>
             <li>本サービスに掲載されたアプリは運営者が審査・保証するものではありません</li>
@@ -96,11 +110,12 @@ export default function TermsPage() {
             <li>ユーザー間のトラブルについて、運営者は責任を負いません</li>
             <li>投稿されたアプリ・コンテンツの正確性・安全性・合法性について保証しません</li>
             <li>本サービスの利用により生じた損害について、運営者の故意・重過失による場合を除き責任を負いません</li>
+            <li>運営者がユーザーに対して損害賠償責任を負う場合、その賠償額はユーザーが当該月に本サービスに支払った金額（無料の場合は0円）を上限とします</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. サービスの変更・停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. サービスの変更・停止</h2>
           <p>
             運営者は、ユーザーへの事前通知なくサービスの内容を変更・停止・終了することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -108,7 +123,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. アカウント停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. アカウント停止</h2>
           <p>
             本規約に違反した場合、または違反が疑われる場合、予告なくアカウントを停止・削除することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -116,14 +131,14 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. 準拠法・管轄</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">12. 準拠法・管轄</h2>
           <p>
             本規約は日本法に準拠します。本サービスに関する紛争については、運営者の所在地を管轄する裁判所を合意管轄とします。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">12. お問い合わせ</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">13. お問い合わせ</h2>
           <p>
             本規約に関するお問い合わせは<a href="/contact" className="underline text-zinc-500">こちら</a>からご連絡ください。
           </p>
