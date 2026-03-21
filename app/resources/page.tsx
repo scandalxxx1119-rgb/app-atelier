@@ -26,16 +26,23 @@ export default function ResourcesPage() {
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "アプリ投稿", icon: "📱" },
-            { label: "テスター募集", icon: "🧪" },
-            { label: "バッジ制度", icon: "🏅" },
-            { label: "ポイント制度", icon: "⭐" },
-          ].map((f) => (
-            <div key={f.label} className="bg-white/10 rounded-lg p-3 text-center">
-              <div className="text-2xl mb-1">{f.icon}</div>
-              <div className="text-xs font-medium">{f.label}</div>
-            </div>
-          ))}
+            { label: "アプリ投稿", icon: "📱", href: null },
+            { label: "テスター募集", icon: "🧪", href: null },
+            { label: "バッジ制度", icon: "🏅", href: null },
+            { label: "ポイント制度", icon: "⭐", href: "/points" },
+          ].map((f) =>
+            f.href ? (
+              <Link key={f.label} href={f.href} className="bg-white/10 hover:bg-white/20 rounded-lg p-3 text-center transition-colors">
+                <div className="text-2xl mb-1">{f.icon}</div>
+                <div className="text-xs font-medium">{f.label}</div>
+              </Link>
+            ) : (
+              <div key={f.label} className="bg-white/10 rounded-lg p-3 text-center">
+                <div className="text-2xl mb-1">{f.icon}</div>
+                <div className="text-xs font-medium">{f.label}</div>
+              </div>
+            )
+          )}
         </div>
         <div className="mt-4 flex gap-3">
           <Link href="/" className="text-sm font-semibold text-white underline underline-offset-2">
