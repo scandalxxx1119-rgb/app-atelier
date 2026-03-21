@@ -8,12 +8,27 @@ import type { User } from "@supabase/supabase-js";
 
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const pathname = usePathname();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      if (data.user) {
+        supabase.from("aa_profiles").select("avatar_url").eq("id", data.user.id).single()
+          .then(({ data: profile }) => setAvatarUrl(profile?.avatar_url ?? null));
+      }
+    });
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null)
+      (_event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          supabase.from("aa_profiles").select("avatar_url").eq("id", session.user.id).single()
+            .then(({ data: profile }) => setAvatarUrl(profile?.avatar_url ?? null));
+        } else {
+          setAvatarUrl(null);
+        }
+      }
     );
     return () => listener.subscription.unsubscribe();
   }, []);
@@ -39,7 +54,7 @@ export default function Header() {
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
         <nav className="flex items-center gap-1 text-xs shrink-0">
           {navLink("/", "ホーム")}
-          <span className="hidden sm:inline">{navLink("/resources", "About")}</span>
+          {navLink("/resources", "About")}
         </nav>
         <nav className="flex items-center gap-1 text-xs shrink-0">
           {user ? (
@@ -57,14 +72,17 @@ export default function Header() {
               </Link>
               <Link
                 href="/profile"
-                className={`px-3 py-1.5 text-xs whitespace-nowrap transition-colors rounded-md ${
-                  pathname === "/profile"
-                    ? "text-zinc-900 dark:text-white font-semibold"
-                    : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
+                className={`flex items-center transition-colors rounded-full ${
+                  pathname === "/profile" ? "ring-2 ring-zinc-900 dark:ring-white" : ""
                 }`}
               >
-                <span className="hidden sm:inline">マイページ</span>
-                <span className="sm:hidden">👤</span>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="avatar" className="w-7 h-7 rounded-full object-cover" />
+                ) : (
+                  <span className="w-7 h-7 rounded-full bg-zinc-200 dark:bg-zinc-700 flex items-center justify-center text-xs font-semibold text-zinc-600 dark:text-zinc-300">
+                    👤
+                  </span>
+                )}
               </Link>
               <button
                 onClick={() => supabase.auth.signOut()}
