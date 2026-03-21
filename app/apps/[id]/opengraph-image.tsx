@@ -7,6 +7,7 @@ export const contentType = "image/png";
 
 export default async function Image({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -18,7 +19,29 @@ export default async function Image({ params }: { params: Promise<{ id: string }
     .eq("id", id)
     .single();
 
-  const iconSrc = app?.icon_url ?? null;
+  let iconData: ArrayBuffer | null = null;
+  let iconMime = "image/png";
+  if (app?.icon_url) {
+    try {
+      const res = await fetch(app.icon_url);
+      iconData = await res.arrayBuffer();
+      iconMime = res.headers.get("content-type") ?? "image/png";
+    } catch {
+      iconData = null;
+    }
+  }
+
+  const iconSrc = iconData
+    ? (() => {
+        const u = new Uint8Array(iconData!);
+        let s = "";
+        for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+        return `data:${iconMime};base64,${btoa(s)}`;
+      })()
+    : null;
+
+  const name = app?.name ?? "App Atelier";
+  const tagline = app?.tagline ?? "個人開発者のアプリショーケース";
 
   return new ImageResponse(
     (
@@ -30,14 +53,12 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           display: "flex",
           alignItems: "center",
           fontFamily: "sans-serif",
-          padding: "0",
         }}
       >
-        {/* 左: アイコン */}
         <div
           style={{
-            width: 630,
-            height: 630,
+            width: "630px",
+            height: "630px",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -46,33 +67,30 @@ export default async function Image({ params }: { params: Promise<{ id: string }
           }}
         >
           {iconSrc ? (
-            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={iconSrc}
               width={380}
               height={380}
-              style={{ borderRadius: 76 }}
+              style={{ borderRadius: "76px" }}
             />
           ) : (
             <div
               style={{
-                width: 380,
-                height: 380,
-                borderRadius: 76,
+                width: "380px",
+                height: "380px",
+                borderRadius: "76px",
                 background: "#27272a",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: 140,
+                fontSize: "140px",
                 color: "#52525b",
               }}
             >
-              {(app?.name ?? "A")[0]}
+              {name[0]}
             </div>
           )}
         </div>
-
-        {/* 右: テキスト */}
         <div
           style={{
             flex: 1,
@@ -80,38 +98,37 @@ export default async function Image({ params }: { params: Promise<{ id: string }
             flexDirection: "column",
             justifyContent: "center",
             padding: "60px 60px 60px 56px",
-            gap: 0,
           }}
         >
           <div
             style={{
-              fontSize: 22,
+              fontSize: "22px",
               color: "#71717a",
-              marginBottom: 20,
-              letterSpacing: 2,
+              marginBottom: "20px",
+              letterSpacing: "2px",
             }}
           >
             App Atelier
           </div>
           <div
             style={{
-              fontSize: 54,
+              fontSize: "54px",
               fontWeight: 700,
               color: "#fafafa",
-              marginBottom: 24,
+              marginBottom: "24px",
               lineHeight: 1.15,
             }}
           >
-            {app?.name ?? "App Atelier"}
+            {name}
           </div>
           <div
             style={{
-              fontSize: 26,
+              fontSize: "26px",
               color: "#a1a1aa",
               lineHeight: 1.5,
             }}
           >
-            {app?.tagline ?? "個人開発者のアプリショーケース"}
+            {tagline}
           </div>
         </div>
       </div>
