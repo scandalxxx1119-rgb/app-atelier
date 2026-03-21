@@ -26,8 +26,8 @@ export default function ResourcesPage() {
         </p>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
-            { label: "アプリ投稿", icon: "📱", href: null },
-            { label: "テスター募集", icon: "🧪", href: null },
+            { label: "アプリ投稿", icon: "📱", href: "/submit" },
+            { label: "テスター募集", icon: "🧪", href: "/testers" },
             { label: "バッジ制度", icon: "🏅", href: null },
             { label: "ポイント制度", icon: "⭐", href: "/points" },
           ].map((f) =>
