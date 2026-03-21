@@ -354,7 +354,7 @@ export default function SubmitPage() {
               <div className="flex-1">
                 <label className="flex items-center gap-1 text-xs font-medium text-zinc-500 mb-1">
                   付与ポイント
-                  <Tooltip text="テスターとして承認されたユーザーに付与するポイント数です。ポイントはApp Atelier内での活動実績として表示されます（1〜5pt）。" />
+                  <Tooltip text="テスターとして承認されたユーザーに付与するポイント数です。ポイントはApp Atelier運営から付与されるものであり、開発者個人が付与するものではありません（1〜5pt）。" />
                 </label>
                 <input
                   type="number"
