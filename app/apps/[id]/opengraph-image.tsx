@@ -17,22 +17,7 @@ export default async function Image({ params }: { params: { id: string } }) {
     .eq("id", params.id)
     .single();
 
-  // edge runtimeで外部画像をfetchしてArrayBufferとして渡す（BufferはNG）
-  let iconData: ArrayBuffer | null = null;
-  let iconMime = "image/png";
-  if (app?.icon_url) {
-    try {
-      const res = await fetch(app.icon_url);
-      iconData = await res.arrayBuffer();
-      iconMime = res.headers.get("content-type") ?? "image/png";
-    } catch {
-      iconData = null;
-    }
-  }
-
-  const iconSrc = iconData
-    ? (() => { const u = new Uint8Array(iconData!); let s = ""; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return `data:${iconMime};base64,${btoa(s)}`; })()
-    : null;
+  const iconSrc = app?.icon_url ?? null;
 
   return new ImageResponse(
     (
