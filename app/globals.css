@@ -18,11 +18,12 @@
   --font-sans: var(--font-geist-sans);
 }
 
-body {
+html, body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
+  max-width: 100vw;
 }
 
 /* iOSズーム防止: input/textareaは16px以上必須 */
