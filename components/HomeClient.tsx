@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js";
 import type { App } from "@/lib/types";
 
 type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null; is_boosted?: boolean };
+type SimpleApp = { id: string; name: string; tagline: string; icon_url: string | null; likes_count: number };
 
 const SORT_OPTIONS = [
   { label: "新着", value: "created_at" },
@@ -47,6 +48,8 @@ export default function HomeClient({
   const [boostedAppIds, setBoostedAppIds] = useState<Set<string>>(new Set());
   const [boostingId, setBoostingId] = useState<string | null>(null);
   const BOOST_COST = 50;
+  const [weeklyTop, setWeeklyTop] = useState<SimpleApp[]>([]);
+  const [recentlyUpdated, setRecentlyUpdated] = useState<SimpleApp[]>([]);
   // サーバーデータがある場合のみ初回フェッチをスキップ
   const isInitialRender = useRef(initialApps.length > 0);
 
@@ -56,6 +59,33 @@ export default function HomeClient({
       setUser(session?.user ?? null)
     );
     return () => listener.subscription.unsubscribe();
+  }, []);
+
+  // 週次ランキング（直近30日の人気アプリTOP3）
+  useEffect(() => {
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    supabase.from("aa_apps")
+      .select("id, name, tagline, icon_url, likes_count")
+      .gte("created_at", monthAgo)
+      .order("likes_count", { ascending: false })
+      .limit(3)
+      .then(({ data }) => { if (data && data.length > 0) setWeeklyTop(data as SimpleApp[]); });
+
+    // 最近アップデートがあったアプリ（直近7日）
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    supabase.from("aa_app_updates")
+      .select("app_id")
+      .gte("created_at", weekAgo)
+      .order("created_at", { ascending: false })
+      .limit(20)
+      .then(({ data: updates }) => {
+        if (!updates || updates.length === 0) return;
+        const appIds = [...new Set((updates as { app_id: string }[]).map((u) => u.app_id))].slice(0, 5);
+        supabase.from("aa_apps")
+          .select("id, name, tagline, icon_url, likes_count")
+          .in("id", appIds)
+          .then(({ data: apps }) => { if (apps) setRecentlyUpdated(apps as SimpleApp[]); });
+      });
   }, []);
 
   const selectedTags = [...selectedPlatforms, ...selectedCategories];
@@ -165,6 +195,60 @@ export default function HomeClient({
                 )}
                 <p className="text-xs font-medium leading-tight line-clamp-2 w-full">{app.name}</p>
                 <p className="text-[10px] text-zinc-400 truncate w-full">{app.aa_profiles?.username ?? "anonymous"}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 週次ランキング */}
+      {tab === "all" && weeklyTop.length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">今月の人気TOP {weeklyTop.length}</p>
+          <div className="space-y-2">
+            {weeklyTop.map((app, i) => (
+              <Link key={app.id} href={`/apps/${app.id}`}
+                className="flex items-center gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors bg-white dark:bg-zinc-900">
+                <span className="text-lg font-bold text-zinc-300 dark:text-zinc-600 w-5 text-center flex-shrink-0">
+                  {i + 1}
+                </span>
+                {app.icon_url ? (
+                  <img src={app.icon_url} alt={app.name} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 flex-shrink-0">
+                    {app.name[0]}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{app.name}</p>
+                  <p className="text-xs text-zinc-400 truncate">{app.tagline}</p>
+                </div>
+                <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                  <span>♥</span><span>{app.likes_count}</span>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 最近アップデートがあったアプリ */}
+      {tab === "all" && recentlyUpdated.length > 0 && (
+        <div className="mb-8">
+          <p className="text-xs font-semibold text-zinc-400 uppercase tracking-wide mb-3">最近アップデート</p>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {recentlyUpdated.map((app) => (
+              <Link key={app.id} href={`/apps/${app.id}`}
+                className="flex-shrink-0 w-28 flex flex-col items-center gap-1.5 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors bg-white dark:bg-zinc-900 text-center">
+                {app.icon_url ? (
+                  <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover" />
+                ) : (
+                  <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-lg font-bold text-zinc-400">
+                    {app.name[0]}
+                  </div>
+                )}
+                <p className="text-xs font-medium leading-tight line-clamp-2 w-full">{app.name}</p>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300">更新あり</span>
               </Link>
             ))}
           </div>

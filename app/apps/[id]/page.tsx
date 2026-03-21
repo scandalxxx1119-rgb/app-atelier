@@ -61,6 +61,8 @@ type AppUpdate = {
   user_id: string;
 };
 
+type RelatedApp = { id: string; name: string; tagline: string; icon_url: string | null; likes_count: number };
+
 function getYoutubeId(url: string): string | null {
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([^&\n?#]+)/);
   return match ? match[1] : null;
@@ -98,6 +100,7 @@ export default function AppDetailPage() {
   const [updateContent, setUpdateContent] = useState("");
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [postingUpdate, setPostingUpdate] = useState(false);
+  const [relatedApps, setRelatedApps] = useState<RelatedApp[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -111,6 +114,16 @@ export default function AppDetailPage() {
         supabase.from("aa_profiles").select("id, username, badge, avatar_url")
           .eq("id", data.user_id).single()
           .then(({ data: p }) => { if (p) setDeveloper(p as Profile); });
+        // 関連アプリ（同じタグを持つアプリ）
+        if (data.tags && data.tags.length > 0) {
+          supabase.from("aa_apps")
+            .select("id, name, tagline, icon_url, likes_count")
+            .overlaps("tags", data.tags)
+            .neq("id", id)
+            .order("likes_count", { ascending: false })
+            .limit(4)
+            .then(({ data: related }) => { if (related) setRelatedApps(related as RelatedApp[]); });
+        }
       });
 
     // コメント取得
@@ -232,6 +245,9 @@ export default function AppDetailPage() {
       setUpdateVersion("");
       setUpdateContent("");
       setUpdateFormOpen(false);
+      // アップデート投稿で+5pt
+      await supabase.from("aa_points").insert({ user_id: user.id, amount: 5, reason: `「${app?.name}」のアップデートを投稿`, app_id: id });
+      setUserPoints((p) => p + 5);
     }
     setPostingUpdate(false);
   };
@@ -680,6 +696,32 @@ export default function AppDetailPage() {
           </button>
         </form>
       </div>
+
+      {/* 関連アプリ */}
+      {relatedApps.length > 0 && (
+        <div className="mt-12 pt-8 border-t border-zinc-100 dark:border-zinc-800">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">関連アプリ</h2>
+          <div className="grid grid-cols-2 gap-3">
+            {relatedApps.map((a) => (
+              <Link key={a.id} href={`/apps/${a.id}`}
+                className="flex items-start gap-3 p-3 rounded-xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
+                {a.icon_url ? (
+                  <img src={a.icon_url} alt={a.name} className="w-10 h-10 rounded-xl object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-base font-bold text-zinc-400 flex-shrink-0">
+                    {a.name[0]}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium truncate">{a.name}</p>
+                  <p className="text-xs text-zinc-400 line-clamp-2">{a.tagline}</p>
+                  <p className="text-xs text-zinc-400 mt-1">♥ {a.likes_count}</p>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
