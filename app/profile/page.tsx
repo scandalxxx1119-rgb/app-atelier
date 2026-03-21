@@ -369,8 +369,13 @@ export default function ProfilePage() {
           <span className="text-zinc-500"><strong className="text-zinc-900 dark:text-zinc-100">{followingCount}</strong> フォロー中</span>
         </div>
         {memberCount !== null && (
-          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-sm font-semibold">
-            👥 会員登録数: {memberCount.toLocaleString()} 人
+          <div className="mt-3 flex flex-wrap gap-2">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-sm font-semibold">
+              👥 会員登録数: {memberCount.toLocaleString()} 人
+            </div>
+            <a href="/admin" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
+              🚩 通報管理
+            </a>
           </div>
         )}
       </section>
