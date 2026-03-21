@@ -62,8 +62,8 @@ export default function EditAppPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [status, setStatus] = useState("released");
   const [testerEnabled, setTesterEnabled] = useState(false);
-  const [testerSlots, setTesterSlots] = useState(5);
-  const [testerPoints, setTesterPoints] = useState(10);
+  const [testerSlots, setTesterSlots] = useState(12);
+  const [testerPoints, setTesterPoints] = useState(1);
 
   const [iconPreview, setIconPreview] = useState("");
   const [iconFile, setIconFile] = useState<File | null>(null);

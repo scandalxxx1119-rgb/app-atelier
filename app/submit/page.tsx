@@ -64,7 +64,7 @@ export default function SubmitPage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [status, setStatus] = useState("released");
   const [testerEnabled, setTesterEnabled] = useState(false);
-  const [testerSlots, setTesterSlots] = useState(5);
+  const [testerSlots, setTesterSlots] = useState(12);
   const [testerPoints, setTesterPoints] = useState(1);
 
   const [iconFile, setIconFile] = useState<File | null>(null);

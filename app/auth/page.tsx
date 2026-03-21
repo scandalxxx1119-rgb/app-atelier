@@ -52,6 +52,12 @@ export default function AuthPage() {
               },
               { onConflict: "id" }
             );
+            // 新規登録ボーナス
+            await supabase.from("aa_points").insert({
+              user_id: data.user.id,
+              amount: 10,
+              reason: "新規登録ボーナス",
+            });
           }
           router.push("/");
           router.refresh();

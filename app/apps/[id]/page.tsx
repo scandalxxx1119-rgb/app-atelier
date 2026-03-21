@@ -85,6 +85,8 @@ export default function AppDetailPage() {
   const [applying, setApplying] = useState(false);
   const [totalApplicants, setTotalApplicants] = useState(0);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
+  const [rewardingComment, setRewardingComment] = useState<string | null>(null);
+  const [rewardedComments, setRewardedComments] = useState<Set<string>>(new Set());
   const [isBoosted, setIsBoosted] = useState(false);
   const [boosting, setBoosting] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
@@ -167,6 +169,12 @@ export default function AppDetailPage() {
       await supabase.from("aa_likes").insert({ app_id: id, user_id: user.id });
       setLiked(true);
       setApp((a) => a ? { ...a, likes_count: a.likes_count + 1 } : a);
+      // いいねした人に+1pt
+      await supabase.from("aa_points").insert({ user_id: user.id, amount: 1, reason: `「${app?.name}」にいいね`, app_id: id });
+      // いいねされた開発者に+1pt
+      if (app) {
+        await supabase.from("aa_points").insert({ user_id: app.user_id, amount: 1, reason: `「${app.name}」がいいねされた`, app_id: id });
+      }
     }
   };
 
@@ -237,6 +245,19 @@ export default function AppDetailPage() {
     setDeletingComment(null);
   };
 
+  const handleRewardComment = async (commentUserId: string, commentId: string, amount: number) => {
+    if (!user || !app) return;
+    setRewardingComment(commentId);
+    await supabase.from("aa_points").insert({
+      user_id: commentUserId,
+      amount,
+      reason: `「${app.name}」へのコメント報酬`,
+      app_id: app.id,
+    });
+    setRewardedComments((prev) => new Set([...prev, commentId]));
+    setRewardingComment(null);
+  };
+
   const BOOST_COST = 50;
   const handleBoost = async () => {
     if (!user || !app) return;
@@ -245,7 +266,7 @@ export default function AppDetailPage() {
       return;
     }
     setBoosting(true);
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     await supabase.from("aa_boosts").insert({ app_id: app.id, user_id: user.id, type: "featured", expires_at: expiresAt });
     await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${app.name}」をブースト`, app_id: app.id });
     setIsBoosted(true);
@@ -263,9 +284,18 @@ export default function AppDetailPage() {
     }
   };
 
-  const handleXShare = () => {
+  const handleXShare = async () => {
     const text = `${app?.name} - ${app?.tagline}`;
     window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, "_blank");
+    // 1アプリにつき1回だけ+2pt
+    if (user && app) {
+      const { data: existing } = await supabase.from("aa_points")
+        .select("id").eq("user_id", user.id).eq("app_id", app.id).eq("reason", "Xでシェア").maybeSingle();
+      if (!existing) {
+        await supabase.from("aa_points").insert({ user_id: user.id, amount: 2, reason: "Xでシェア", app_id: app.id });
+        setUserPoints((p) => p + 2);
+      }
+    }
   };
 
   if (!app) {
@@ -332,7 +362,7 @@ export default function AppDetailPage() {
                 ) : (
                   <button onClick={handleBoost} disabled={boosting}
                     className="text-xs text-zinc-400 hover:text-amber-500 transition-colors disabled:opacity-50">
-                    {boosting ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・7日間)`}
+                    {boosting ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・3日間)`}
                   </button>
                 )}
               </>
@@ -547,6 +577,27 @@ export default function AppDetailPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-zinc-400 mb-0.5">{commentProfiles[c.user_id] ?? "anonymous"}</p>
                 <p className="text-sm text-zinc-700 dark:text-zinc-300">{(c as { content: string }).content}</p>
+                {isOwner && c.user_id !== user?.id && (
+                  <div className="mt-1 flex items-center gap-1">
+                    {rewardedComments.has(c.id) ? (
+                      <span className="text-xs text-green-500">pt付与済み</span>
+                    ) : (
+                      <>
+                        <span className="text-xs text-zinc-400">pt付与:</span>
+                        {[1, 2, 3].map((pt) => (
+                          <button
+                            key={pt}
+                            onClick={() => handleRewardComment(c.user_id, c.id, pt)}
+                            disabled={rewardingComment === c.id}
+                            className="px-1.5 py-0.5 text-xs rounded bg-zinc-100 dark:bg-zinc-800 hover:bg-amber-100 dark:hover:bg-amber-900 text-zinc-500 hover:text-amber-600 transition-colors disabled:opacity-50"
+                          >
+                            +{pt}pt
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               {user?.id === c.user_id && (
                 <button
