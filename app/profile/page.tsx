@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { supabase } from "@/lib/supabase";
-import Badge from "@/components/Badge";
+import Badge, { DevBadge, TesterBadge } from "@/components/Badge";
 import { validateImageFile } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
@@ -34,6 +34,7 @@ export default function ProfilePage() {
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null);
   const [apps, setApps] = useState<App[]>([]);
   const [points, setPoints] = useState(0);
+  const [testerScore, setTesterScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -48,7 +49,7 @@ export default function ProfilePage() {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
 
-      const [profileRes, appsRes, pointsRes] = await Promise.all([
+      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes] = await Promise.all([
         supabase.from("aa_profiles")
           .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
@@ -58,6 +59,14 @@ export default function ProfilePage() {
         supabase.from("aa_points")
           .select("amount")
           .eq("user_id", data.user.id),
+        supabase.from("aa_tester_applications")
+          .select("id", { count: "exact" })
+          .eq("user_id", data.user.id).eq("status", "approved"),
+        supabase.from("aa_points")
+          .select("id", { count: "exact" })
+          .eq("user_id", data.user.id)
+          .like("reason", "%コメント報酬%")
+          .gte("amount", 2),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
@@ -71,6 +80,7 @@ export default function ProfilePage() {
       setApps((appsRes.data as App[]) ?? []);
       const total = (pointsRes.data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
       setPoints(total);
+      setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
       setLoading(false);
     });
   }, [router]);
@@ -198,6 +208,8 @@ export default function ProfilePage() {
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">プロフィール</h2>
           <div className="flex items-center gap-3">
             {badge && <Badge badge={badge} />}
+            <DevBadge appCount={apps.length} />
+            <TesterBadge score={testerScore} />
             {username && (
               <Link href={`/users/${username}`} className="text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 underline transition-colors">
                 公開ページを見る →

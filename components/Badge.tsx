@@ -51,3 +51,44 @@ export default function Badge({
     </span>
   );
 }
+
+// 開発者バッジ（アプリ投稿数）
+export function getDevBadgeLevel(appCount: number): number {
+  if (appCount >= 15) return 4;
+  if (appCount >= 7) return 3;
+  if (appCount >= 3) return 2;
+  if (appCount >= 1) return 1;
+  return 0;
+}
+
+export function DevBadge({ appCount, size = "sm" }: { appCount: number; size?: "sm" | "xs" }) {
+  const level = getDevBadgeLevel(appCount);
+  if (level === 0) return null;
+  const colors = ["", "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700", "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700", "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700", "bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"];
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-bold rounded-md ${colors[level]} ${size === "xs" ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]"}`}>
+      📱 Lv.{level}
+    </span>
+  );
+}
+
+// テスターバッジ（承認数＋高評価コメント報酬合計）
+export function getTesterBadgeLevel(score: number): number {
+  if (score >= 30) return 4;
+  if (score >= 15) return 3;
+  if (score >= 5) return 2;
+  if (score >= 1) return 1;
+  return 0;
+}
+
+export function TesterBadge({ score, size = "sm" }: { score: number; size?: "sm" | "xs" }) {
+  const level = getTesterBadgeLevel(score);
+  if (level === 0) return null;
+  const stars = "★".repeat(level);
+  const borderColors = ["", "border-blue-300 dark:border-blue-700 text-blue-600 dark:text-blue-300", "border-blue-400 dark:border-blue-600 text-blue-600 dark:text-blue-300", "border-indigo-400 dark:border-indigo-600 text-indigo-600 dark:text-indigo-300", "border-purple-400 dark:border-purple-600 text-purple-600 dark:text-purple-300"];
+  return (
+    <span className={`inline-flex items-center gap-0.5 font-bold rounded-full border-2 bg-transparent ${borderColors[level]} ${size === "xs" ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]"}`}>
+      🧪 {stars}
+    </span>
+  );
+}

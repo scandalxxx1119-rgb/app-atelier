@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import Badge from "@/components/Badge";
+import Badge, { DevBadge, TesterBadge } from "@/components/Badge";
 import { safeUrl } from "@/lib/sanitize";
 
 type Profile = {
@@ -32,6 +32,7 @@ export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [apps, setApps] = useState<App[]>([]);
+  const [testerScore, setTesterScore] = useState(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -40,10 +41,21 @@ export default function UserProfilePage() {
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
         setProfile(data as Profile);
-        const { data: appsData } = await supabase.from("aa_apps")
-          .select("id, name, tagline, icon_url, tags, likes_count, status")
-          .eq("user_id", data.id).order("created_at", { ascending: false });
-        setApps((appsData as App[]) ?? []);
+        const [appsRes, testerRes, highRatingRes] = await Promise.all([
+          supabase.from("aa_apps")
+            .select("id, name, tagline, icon_url, tags, likes_count, status")
+            .eq("user_id", data.id).order("created_at", { ascending: false }),
+          supabase.from("aa_tester_applications")
+            .select("id", { count: "exact" })
+            .eq("user_id", data.id).eq("status", "approved"),
+          supabase.from("aa_points")
+            .select("id", { count: "exact" })
+            .eq("user_id", data.id)
+            .like("reason", "%コメント報酬%")
+            .gte("amount", 2),
+        ]);
+        setApps((appsRes.data as App[]) ?? []);
+        setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
         setLoading(false);
       });
   }, [username]);
@@ -73,6 +85,8 @@ export default function UserProfilePage() {
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold">{profile.username}</h1>
             {profile.badge && <Badge badge={profile.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} />}
+            <DevBadge appCount={apps.length} />
+            <TesterBadge score={testerScore} />
           </div>
           {profile.bio && <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">{profile.bio}</p>}
           <div className="flex items-center gap-2 flex-wrap mt-1">
