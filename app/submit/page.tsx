@@ -135,12 +135,17 @@ export default function SubmitPage() {
         return;
       }
 
-      // 新規アカウント（登録24時間以内）は1件まで
+      // 新規アカウント（登録24時間以内）は1件まで（gold/platinum/master は免除）
       const accountAge = Date.now() - new Date(user.created_at).getTime();
       if (accountAge < 24 * 60 * 60 * 1000 && (count ?? 0) >= 1) {
-        setError("アカウント登録から24時間以内は1件までしか投稿できません");
-        setSubmitting(false);
-        return;
+        const { data: profile } = await supabase.from("aa_profiles")
+          .select("badge").eq("id", user.id).single();
+        const exemptBadges = ["gold", "platinum", "master"];
+        if (!exemptBadges.includes(profile?.badge ?? "")) {
+          setError("アカウント登録から24時間以内は1件までしか投稿できません");
+          setSubmitting(false);
+          return;
+        }
       }
       let iconUrl: string | null = null;
       if (iconFile) {
