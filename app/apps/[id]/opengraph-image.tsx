@@ -17,6 +17,20 @@ export default async function Image({ params }: { params: { id: string } }) {
     .eq("id", params.id)
     .single();
 
+  // edge runtimeで外部画像を読み込むためにfetchしてbase64に変換
+  let iconSrc: string | null = null;
+  if (app?.icon_url) {
+    try {
+      const res = await fetch(app.icon_url);
+      const buf = await res.arrayBuffer();
+      const base64 = Buffer.from(buf).toString("base64");
+      const mime = res.headers.get("content-type") ?? "image/png";
+      iconSrc = `data:${mime};base64,${base64}`;
+    } catch {
+      iconSrc = null;
+    }
+  }
+
   return new ImageResponse(
     (
       <div
@@ -32,9 +46,9 @@ export default async function Image({ params }: { params: { id: string } }) {
           fontFamily: "sans-serif",
         }}
       >
-        {app?.icon_url && (
+        {iconSrc && (
           <img
-            src={app.icon_url}
+            src={iconSrc}
             width={120}
             height={120}
             style={{ borderRadius: 24, marginBottom: 32 }}
