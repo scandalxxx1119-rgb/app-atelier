@@ -5,7 +5,8 @@ export const runtime = "edge";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-export default async function Image({ params }: { params: { id: string } }) {
+export default async function Image({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -14,7 +15,7 @@ export default async function Image({ params }: { params: { id: string } }) {
   const { data: app } = await supabase
     .from("aa_apps")
     .select("name, tagline, icon_url")
-    .eq("id", params.id)
+    .eq("id", id)
     .single();
 
   const iconSrc = app?.icon_url ?? null;
