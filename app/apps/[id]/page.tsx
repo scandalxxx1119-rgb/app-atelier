@@ -78,6 +78,7 @@ export default function AppDetailPage() {
   const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [activeShot, setActiveShot] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [application, setApplication] = useState<Application | null>(null);
   const [applyMsg, setApplyMsg] = useState("");
@@ -473,8 +474,12 @@ export default function AppDetailPage() {
       {shots.length > 0 && (
         <div className="mb-8">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">スクリーンショット</h2>
-          <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 mb-2">
+          <div className="rounded-xl overflow-hidden bg-zinc-100 dark:bg-zinc-800 mb-2 cursor-zoom-in relative group"
+            onClick={() => setLightboxOpen(true)}>
             <img src={shots[activeShot]} alt={`screenshot ${activeShot + 1}`} className="w-full object-contain max-h-80" />
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/10">
+              <span className="bg-black/50 text-white text-xs px-3 py-1.5 rounded-full">タップで拡大</span>
+            </div>
           </div>
           {shots.length > 1 && (
             <div className="flex gap-2 overflow-x-auto pb-1">
@@ -483,6 +488,44 @@ export default function AppDetailPage() {
                   className={`flex-shrink-0 w-16 h-12 rounded-lg overflow-hidden border-2 transition-colors ${i === activeShot ? "border-zinc-900 dark:border-white" : "border-transparent"}`}>
                   <img src={src} alt={`thumb ${i}`} className="w-full h-full object-cover" />
                 </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxOpen && (
+        <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+          onClick={() => setLightboxOpen(false)}>
+          <button className="absolute top-4 right-4 text-white text-2xl w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors">
+            ×
+          </button>
+          {shots.length > 1 && (
+            <>
+              <button
+                className="absolute left-4 text-white text-2xl w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setActiveShot((i) => (i - 1 + shots.length) % shots.length); }}>
+                ‹
+              </button>
+              <button
+                className="absolute right-4 text-white text-2xl w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                onClick={(e) => { e.stopPropagation(); setActiveShot((i) => (i + 1) % shots.length); }}>
+                ›
+              </button>
+            </>
+          )}
+          <img
+            src={shots[activeShot]}
+            alt={`screenshot ${activeShot + 1}`}
+            className="max-w-full max-h-full object-contain px-16"
+            onClick={(e) => e.stopPropagation()}
+          />
+          {shots.length > 1 && (
+            <div className="absolute bottom-4 flex gap-1.5">
+              {shots.map((_, i) => (
+                <button key={i} onClick={(e) => { e.stopPropagation(); setActiveShot(i); }}
+                  className={`w-2 h-2 rounded-full transition-colors ${i === activeShot ? "bg-white" : "bg-white/40"}`} />
               ))}
             </div>
           )}
