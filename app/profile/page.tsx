@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useTheme } from "next-themes";
 import { supabase } from "@/lib/supabase";
 import Badge from "@/components/Badge";
 import { validateImageFile } from "@/lib/sanitize";
@@ -153,9 +154,20 @@ export default function ProfilePage() {
 
   const inputCls = "w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm";
 
+  const { theme, setTheme } = useTheme();
+
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold mb-8">マイページ</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold">マイページ</h1>
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+          aria-label="テーマ切替"
+        >
+          {theme === "dark" ? "☀️" : "🌙"}
+        </button>
+      </div>
 
       {/* Profile */}
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-5">
