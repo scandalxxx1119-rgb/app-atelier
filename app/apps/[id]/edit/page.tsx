@@ -5,7 +5,19 @@ import { useRouter, useParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
 import { validateImageFile } from "@/lib/sanitize";
+import { isPremiumBadge } from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
+
+function Tooltip({ text }: { text: string }) {
+  return (
+    <span className="relative group inline-flex items-center">
+      <span className="w-4 h-4 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 text-[10px] flex items-center justify-center cursor-help font-bold select-none">?</span>
+      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60 px-3 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs invisible group-hover:visible z-10 leading-relaxed pointer-events-none whitespace-normal">
+        {text}
+      </span>
+    </span>
+  );
+}
 
 async function uploadImage(file: File, path: string): Promise<string> {
   const { error } = await supabase.storage.from("aa-apps").upload(path, file, { upsert: true });
@@ -26,6 +38,7 @@ export default function EditAppPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [isPremium, setIsPremium] = useState(false);
 
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
@@ -54,6 +67,9 @@ export default function EditAppPage() {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
+
+      const { data: profile } = await supabase.from("aa_profiles").select("badge, is_premium, screenshot_extended").eq("id", data.user.id).single();
+      setIsPremium(isPremiumBadge(profile?.badge) || profile?.is_premium === true || profile?.screenshot_extended === true);
 
       const { data: app } = await supabase.from("aa_apps").select("*").eq("id", id).single();
       if (!app || app.user_id !== data.user.id) { router.push("/"); return; }
@@ -272,7 +288,10 @@ export default function EditAppPage() {
               className="w-4 h-4"
             />
             <div>
-              <p className="text-sm font-medium">テスター募集を有効にする</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-sm font-medium">テスター募集を有効にする</p>
+                <Tooltip text="アプリのテスターを募集できます。ユーザーが申請し、あなたが承認するとそのユーザーに自動でポイントが付与されます。テスター管理ページで申請者の承認・拒否を行えます。" />
+              </div>
               <p className="text-xs text-zinc-400">申請したユーザーにポイントを付与できます</p>
             </div>
           </label>
@@ -280,7 +299,10 @@ export default function EditAppPage() {
           {testerEnabled && (
             <div className="flex gap-4 pl-7">
               <div className="flex-1">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">募集枠数</label>
+                <label className="flex items-center gap-1 text-xs font-medium text-zinc-500 mb-1">
+                  募集枠数
+                  <Tooltip text="テスターとして受け入れる最大人数です。満員になると新しい申請ができなくなります。" />
+                </label>
                 <input
                   type="number"
                   min={1}
@@ -291,7 +313,10 @@ export default function EditAppPage() {
                 />
               </div>
               <div className="flex-1">
-                <label className="block text-xs font-medium text-zinc-500 mb-1">付与ポイント</label>
+                <label className="flex items-center gap-1 text-xs font-medium text-zinc-500 mb-1">
+                  付与ポイント
+                  <Tooltip text="テスターとして承認されたユーザーに付与するポイント数です。ポイントはApp Atelier内での活動実績として表示されます（1〜1000pt）。" />
+                </label>
                 <input
                   type="number"
                   min={1}

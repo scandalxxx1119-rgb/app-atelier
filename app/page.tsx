@@ -20,6 +20,7 @@ type App = {
   user_id: string;
   status: string | null;
   aa_profiles: { username: string; badge: string | null } | null;
+  isBoosted?: boolean;
 };
 
 const SORT_OPTIONS = [
@@ -65,6 +66,12 @@ export default function HomePage() {
         appsData = appsData.map((a) => ({ ...a, aa_profiles: profileMap[a.user_id] ?? null }));
       }
 
+      // ブースト中のアプリ取得
+      const { data: boosts } = await supabase.from("aa_boosts").select("app_id")
+        .gt("expires_at", new Date().toISOString());
+      const boostedIds = new Set((boosts ?? []).map((b: { app_id: string }) => b.app_id));
+      appsData = appsData.map((a) => ({ ...a, isBoosted: boostedIds.has(a.id) }));
+
       let filtered = appsData;
       if (search) {
         const q = search.toLowerCase();
@@ -77,7 +84,7 @@ export default function HomePage() {
       }
       if (tab === "all") {
         const boostScore = (a: App) =>
-          isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
+          a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
         filtered.sort((a, b) => boostScore(b) - boostScore(a));
       }
       setApps(filtered);
@@ -223,6 +230,9 @@ export default function HomePage() {
               </div>
               <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
               <div className="flex flex-wrap gap-1">
+                {app.isBoosted && (
+                  <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚀 注目</span>
+                )}
                 {(!app.status || app.status === "released") && (
                   <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
                 )}

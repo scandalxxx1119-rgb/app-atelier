@@ -85,6 +85,9 @@ export default function AppDetailPage() {
   const [applying, setApplying] = useState(false);
   const [totalApplicants, setTotalApplicants] = useState(0);
   const [deletingComment, setDeletingComment] = useState<string | null>(null);
+  const [isBoosted, setIsBoosted] = useState(false);
+  const [boosting, setBoosting] = useState(false);
+  const [userPoints, setUserPoints] = useState(0);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [updateTitle, setUpdateTitle] = useState("");
   const [updateVersion, setUpdateVersion] = useState("");
@@ -131,6 +134,11 @@ export default function AppDetailPage() {
     supabase.from("aa_app_updates").select("*").eq("app_id", id)
       .order("created_at", { ascending: false })
       .then(({ data }) => { if (data) setUpdates(data as AppUpdate[]); });
+
+    // ブースト状態
+    supabase.from("aa_boosts").select("id").eq("app_id", id)
+      .gt("expires_at", new Date().toISOString()).maybeSingle()
+      .then(({ data }) => { if (data) setIsBoosted(true); });
   }, [id]);
 
   useEffect(() => {
@@ -139,6 +147,13 @@ export default function AppDetailPage() {
       .maybeSingle().then(({ data }) => setLiked(!!data));
     supabase.from("aa_tester_applications").select("*").eq("app_id", id).eq("user_id", user.id)
       .maybeSingle().then(({ data }) => setApplication(data as Application | null));
+
+    // ユーザーポイント合計
+    supabase.from("aa_points").select("amount").eq("user_id", user.id)
+      .then(({ data }) => {
+        const total = (data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
+        setUserPoints(total);
+      });
   }, [user, id]);
 
   const handleLike = async () => {
@@ -222,6 +237,22 @@ export default function AppDetailPage() {
     setDeletingComment(null);
   };
 
+  const BOOST_COST = 50;
+  const handleBoost = async () => {
+    if (!user || !app) return;
+    if (userPoints < BOOST_COST) {
+      alert(`ブーストには${BOOST_COST}ptが必要です（現在${userPoints}pt）`);
+      return;
+    }
+    setBoosting(true);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("aa_boosts").insert({ app_id: app.id, user_id: user.id, type: "featured", expires_at: expiresAt });
+    await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${app.name}」をブースト`, app_id: app.id });
+    setIsBoosted(true);
+    setUserPoints((p) => p - BOOST_COST);
+    setBoosting(false);
+  };
+
   const handleShare = async () => {
     const url = window.location.href;
     if (navigator.share) await navigator.share({ title: app?.name, text: app?.tagline, url });
@@ -295,6 +326,14 @@ export default function AppDetailPage() {
                 <Link href={`/apps/${app.id}/edit`} className="text-xs text-zinc-400 hover:underline ml-1">編集</Link>
                 {isTesterApp && (
                   <Link href={`/apps/${app.id}/testers`} className="text-xs text-blue-500 hover:underline">テスター管理</Link>
+                )}
+                {isBoosted ? (
+                  <span className="text-xs text-amber-500 font-medium">🚀 ブースト中</span>
+                ) : (
+                  <button onClick={handleBoost} disabled={boosting}
+                    className="text-xs text-zinc-400 hover:text-amber-500 transition-colors disabled:opacity-50">
+                    {boosting ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・7日間)`}
+                  </button>
                 )}
               </>
             )}
