@@ -27,10 +27,10 @@ export default function PlatinumPage() {
       {/* 説明 */}
       <div className="space-y-6 mb-10">
         <div className="p-5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950">
-          <h2 className="font-bold mb-2 text-sky-700 dark:text-sky-300">先着100名限定</h2>
+          <h2 className="font-bold mb-2 text-sky-700 dark:text-sky-300">先着150名限定</h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
-            App Atelierに登録した最初の100名だけが取得できるバッジです。
-            100名を超えると自動的に付与が終了し、二度と手に入りません。
+            App Atelierに登録した最初の150名だけが取得できるバッジです。
+            150名を超えると自動的に付与が終了し、二度と手に入りません。
           </p>
         </div>
 
