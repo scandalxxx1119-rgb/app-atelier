@@ -28,7 +28,7 @@ export default function ResourcesPage() {
           {[
             { label: "アプリ投稿", icon: "📱", href: "/submit" },
             { label: "テスター募集", icon: "🧪", href: "/testers" },
-            { label: "バッジ制度", icon: "🏅", href: null },
+            { label: "バッジ制度", icon: "🏅", href: "/badges" },
             { label: "ポイント制度", icon: "⭐", href: "/points" },
           ].map((f) =>
             f.href ? (

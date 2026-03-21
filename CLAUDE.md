@@ -45,9 +45,12 @@
 - **テスター申請:** 申請フォーム（メッセージ任意）、申請済み/承認済み/見送り表示
 - **ブースト:** 50pt消費・3日間（オーナーのみ表示、アクションボタン列に配置）
 - **アップデート投稿:** 開発者がバージョン/タイトル/内容を投稿・削除、投稿で+5pt
-- **Xシェア:** +10pt（1アプリ1回限り）
+- **Xシェア:** +10pt（1アプリ1回限り・自分のアプリはpt付与なし）
 - **リンクシェア:** クリップボードコピー / Web Share API
 - **スクリーンショット:** サムネイル選択・ライトボックス拡大
+- **通報機能:** 🚩通報ボタン（オーナー以外に表示）→ aa_reportsへinsert、理由テキスト必須
+- **コメントレート制限:** 1分以内に複数コメント不可
+- **is_hidden対応:** `is_hidden=true`のアプリはfetchで弾きトップへリダイレクト
 - **YouTube動画:** 埋め込み表示
 - **関連アプリ:** ページ下部に同タグのアプリを最大4件表示（likes_count降順）
 
@@ -69,6 +72,13 @@
 - タグ: プラットフォーム・カテゴリ・スペシャル（複数選択）
 - ステータス: リリース済み / ベータ版 / 開発中
 - テスター募集: スロット数・報酬ポイント設定
+- **誓約チェックボックス:** 「規約に同意します」チェックなしは送信不可
+- **投稿数上限:** 1ユーザー最大20件（超過でエラー表示）
+- **新規アカウント制限:** 登録24h以内は1日1件まで（gold/platinum/masterバッジは免除）
+- **投稿完了後:** 🎉完了画面を表示（router.pushではなくsetSubmittedApp）
+  - Xシェアボタン（テキスト＋URL付き）
+  - 「アプリページを見る」リンク
+  - 「ホームへ戻る」ボタン
 
 ### `/profile` マイページ
 - **実装:** `app/profile/page.tsx`（要ログイン）
@@ -100,15 +110,24 @@
 - `/auth/callback` OAuthコールバック
 - `/auth/update-password` パスワード更新
 
+### `/admin` 通報管理（master専用）
+- **実装:** `app/admin/page.tsx`
+- masterバッジ以外はトップへリダイレクト
+- aa_reportsをfetch→アプリ名・通報者名をjoinして表示
+- フィルター: 未対応 / 対応済み
+- 3件以上通報のアプリに⚠バッジ表示
+- 「対応済みにする」「アプリを削除」操作
+- マイページの会員登録数表示横に「🚩 通報管理」リンクあり
+
 ### 説明系ページ（静的）
-- `/platinum` PLATINUMバッジ説明（ログイン状態で出し分け）
+- `/platinum` PLATINUMバッジ説明（ログイン状態で出し分け・付与終了済み表示）
 - `/testers` テスター制度説明
 - `/points` ポイント制度説明
-- `/badges` バッジ一覧説明
-- `/resources` About（サービス説明）
-- `/privacy` プライバシーポリシー
-- `/terms` 利用規約
-- `/contact` お問い合わせ
+- `/badges` バッジ一覧説明（PLATINUMは「付与終了」表示）
+- `/resources` About（サービス説明・バッジ制度は `/badges` にリンク）
+- `/privacy` プライバシーポリシー（通知目的・第三者提供条件・セキュリティ追記済み）
+- `/terms` 利用規約（15条構成・定型約款・反社排除・損害賠償上限・外部リンク免責・知的財産権）
+- `/contact` お問い合わせ（ドメイン取得後にURL更新が必要）
 
 ---
 
@@ -146,6 +165,12 @@
 ### aa_boosts
 - id, app_id, user_id, expires_at, created_at
 - ※typeカラムあるがCHECK制約削除済み・insertで送らない
+
+### aa_reports（通報）
+- id, app_id, user_id（reporter_id）, reason（text）, status（pending/resolved）, created_at
+- RLS: INSERT=authenticated / SELECT・UPDATE=masterのみ（SECURITY DEFINER RPC想定）
+- 3件以上通報されるとDBトリガーでaa_apps.is_hiddenがtrueになる
+- aa_apps: is_hiddenカラム（boolean, default false）
 
 ### aa_follows（フォロー）
 - id, follower_id (uuid → auth.users), following_id (uuid → auth.users), created_at
@@ -198,10 +223,13 @@
 - **実装:** `app/apps/[id]/opengraph-image.tsx`
 - Supabaseからアプリの`icon_url`・`name`・`tagline`を取得して表示
 - **注意:** edge runtimeでは`Buffer`が使えないため、画像は`fetch`→`ArrayBuffer`→`btoa`ループでbase64変換すること（spreadは大きい画像でスタックオーバーフローするのでNG）
+- **レイアウト:** 左630×630パネル（アイコン380×380、背景#18181b）＋右パネル（"App Atelier"ラベル・アプリ名・タグライン）
 - **やらかし記録（2026-03-21）:**
   1. 最初に`Buffer.from(buf).toString("base64")`を使ったがedge runtimeで動かなかった
   2. `btoa(String.fromCharCode(...new Uint8Array(buf)))`のspread版も大きい画像でNG
   3. 正解: `for`ループで1文字ずつ`String.fromCharCode`して`btoa`に渡す
+  4. **Next.js 16のparams非同期問題:** `params.id`を直接使うとPromiseオブジェクトがSupabaseに渡りnullが返る→フォールバック表示になる。必ず`{ params }: { params: Promise<{ id: string }> }`にして`const { id } = await params`とすること
+  5. **JSXコメントで黒画面:** `{/* コメント */}`をImageResponse内に書くと黒画面になる。next/og内ではJSXコメント禁止
 
 ---
 

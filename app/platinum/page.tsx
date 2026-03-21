@@ -26,11 +26,11 @@ export default function PlatinumPage() {
 
       {/* 説明 */}
       <div className="space-y-6 mb-10">
-        <div className="p-5 rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950">
-          <h2 className="font-bold mb-2 text-sky-700 dark:text-sky-300">先着150名限定</h2>
+        <div className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900">
+          <h2 className="font-bold mb-2 text-zinc-700 dark:text-zinc-300">先着150名限定（付与終了）</h2>
           <p className="text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
             App Atelierに登録した最初の150名だけが取得できるバッジです。
-            150名を超えると自動的に付与が終了し、二度と手に入りません。
+            付与は終了しており、現在は新規取得できません。
           </p>
         </div>
 
@@ -89,11 +89,11 @@ export default function PlatinumPage() {
           <>
             <Link
               href="/auth"
-              className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 text-white font-bold hover:opacity-90 transition-opacity shadow-md"
+              className="inline-block px-8 py-3 rounded-full border border-zinc-200 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 font-bold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
             >
-              今すぐ登録してPLATINUMバッジをもらう
+              無料で登録する
             </Link>
-            <p className="text-xs text-zinc-400 mt-3">登録は無料です</p>
+            <p className="text-xs text-zinc-400 mt-3">PLATINUMバッジの付与は終了しています</p>
           </>
         )}
       </div>
