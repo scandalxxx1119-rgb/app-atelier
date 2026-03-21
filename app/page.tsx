@@ -61,51 +61,34 @@ export default function HomePage() {
   const selectedTags = [...selectedPlatforms, ...selectedCategories];
 
   useEffect(() => {
-    // mineタブはユーザー確定後のみ実行
     if (tab === "mine" && !user) return;
     setLoading(true);
 
-    let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false }).limit(100);
-    if (tab === "mine" && user) query = query.eq("user_id", user.id);
-    if (tab === "testers") query = query.gt("tester_slots", 0);
-    if (search) query = (query as typeof query).ilike("name", `%${search}%`);
+    supabase.rpc("get_home_apps", {
+      p_sort: sort,
+      p_tab: tab,
+      p_user_id: user?.id ?? null,
+      p_search: search,
+    }).then(({ data }) => {
+      let appsData: App[] = (data as App[]) ?? [];
 
-    query.then(async ({ data }) => {
-      let appsData = (data as App[]) ?? [];
-
-      const userIds = [...new Set(appsData.map((a) => a.user_id))];
-      const [profilesRes, boostsRes] = await Promise.all([
-        userIds.length > 0
-          ? supabase.from("aa_profiles").select("id, username, badge").in("id", userIds)
-          : Promise.resolve({ data: [] }),
-        supabase.from("aa_boosts").select("app_id").gt("expires_at", new Date().toISOString()),
-      ]);
-
-      const profileMap: Record<string, { username: string; badge: string | null }> = {};
-      profilesRes.data?.forEach((p: { id: string; username: string; badge: string | null }) => {
-        profileMap[p.id] = { username: p.username, badge: p.badge };
-      });
-      const boostedIds = new Set((boostsRes.data ?? []).map((b: { app_id: string }) => b.app_id));
-
-      appsData = appsData.map((a) => ({
+      appsData = appsData.map((a: App & { username?: string; badge?: string | null }) => ({
         ...a,
-        aa_profiles: profileMap[a.user_id] ?? null,
-        isBoosted: boostedIds.has(a.id),
+        aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
       }));
 
-      let filtered = appsData;
       if (selectedPlatforms.length > 0) {
-        filtered = filtered.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
+        appsData = appsData.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
       }
       if (selectedCategories.length > 0) {
-        filtered = filtered.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
+        appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
       }
       if (tab !== "mine") {
         const boostScore = (a: App) =>
           a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
-        filtered.sort((a, b) => boostScore(b) - boostScore(a));
+        appsData.sort((a, b) => boostScore(b) - boostScore(a));
       }
-      setApps(filtered);
+      setApps(appsData);
       setLoading(false);
     });
   }, [sort, search, selectedPlatforms, selectedCategories, tab, user]);
