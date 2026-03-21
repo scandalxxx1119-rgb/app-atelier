@@ -432,29 +432,29 @@ export default function ProfilePage() {
         ) : (
           <div className="space-y-3">
             {apps.map((app) => (
-              <div key={app.id} className="flex items-center gap-4 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-                {app.icon_url ? (
-                  <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-lg font-bold text-zinc-400 flex-shrink-0">
-                    {app.name[0]}
+              <div key={app.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="flex items-center gap-3 mb-3">
+                  {app.icon_url ? (
+                    <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-lg font-bold text-zinc-400 flex-shrink-0">
+                      {app.name[0]}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium truncate">{app.name}</p>
+                      {app.status && app.status !== "released" && (
+                        <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${app.status === "beta" ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300" : "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300"}`}>
+                          {app.status === "beta" ? "β" : "開発中"}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-zinc-400 truncate">{app.tagline}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">♥ {app.likes_count}</p>
                   </div>
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium truncate">{app.name}</p>
-                    {app.status && app.status !== "released" && (
-                      <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${app.status === "beta" ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300" : "bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300"}`}>
-                        {app.status === "beta" ? "β" : "開発中"}
-                      </span>
-                    )}
-                  </div>
-                  <p className="text-xs text-zinc-400 truncate">{app.tagline}</p>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-zinc-400 mr-2">
-                  <span>♥</span><span>{app.likes_count}</span>
-                </div>
-                <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                <div className="flex gap-2 flex-wrap">
                   {boostedAppIds.has(app.id) ? (
                     <span className="px-3 py-1.5 text-xs rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 font-medium">
                       🚀 ブースト中
