@@ -102,10 +102,15 @@ export default function AdminPage() {
             <div key={report.id} className="p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <Link href={`/apps/${report.app_id}`} target="_blank"
-                    className="font-semibold text-sm hover:underline">
-                    {report.app_name} →
-                  </Link>
+                      <div className="flex items-center gap-2">
+                    <Link href={`/apps/${report.app_id}`} target="_blank"
+                      className="font-semibold text-sm hover:underline">
+                      {report.app_name} →
+                    </Link>
+                    {reports.filter((r) => r.app_id === report.app_id && r.status === "pending").length >= 3 && (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-500 text-white">⚠ 3件以上</span>
+                    )}
+                  </div>
                   <p className="text-xs text-zinc-400 mt-0.5">
                     通報者: {report.reporter_username} · {new Date(report.created_at).toLocaleDateString("ja-JP")}
                   </p>

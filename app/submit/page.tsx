@@ -126,6 +126,14 @@ export default function SubmitPage() {
     setSubmitting(true);
 
     try {
+      // 投稿数上限チェック（20件まで）
+      const { count } = await supabase.from("aa_apps")
+        .select("*", { count: "exact", head: true }).eq("user_id", user.id);
+      if ((count ?? 0) >= 20) {
+        setError("1アカウントあたりの投稿数上限（20件）に達しています");
+        setSubmitting(false);
+        return;
+      }
       let iconUrl: string | null = null;
       if (iconFile) {
         const ext = iconFile.name.split(".").pop();

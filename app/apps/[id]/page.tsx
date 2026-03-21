@@ -110,9 +110,9 @@ export default function AppDetailPage() {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
 
     // アプリ取得（joinなし）
-    supabase.from("aa_apps").select("*").eq("id", id).single()
+    supabase.from("aa_apps").select("*").eq("id", id).eq("is_hidden", false).single()
       .then(({ data }) => {
-        if (!data) return;
+        if (!data) { router.push("/"); return; }
         setApp(data as App);
         // 開発者プロフィールを別途取得
         supabase.from("aa_profiles").select("id, username, badge, avatar_url")
@@ -204,6 +204,18 @@ export default function AppDetailPage() {
     e.preventDefault();
     if (!user || !comment.trim()) return;
     setSubmitting(true);
+
+    // 1分以内の連投チェック
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
+    const { count } = await supabase.from("aa_comments")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id).gte("created_at", oneMinuteAgo);
+    if ((count ?? 0) >= 1) {
+      alert("コメントは1分に1回までです");
+      setSubmitting(false);
+      return;
+    }
+
     const { data } = await supabase.from("aa_comments")
       .insert({ app_id: id, user_id: user.id, content: comment.trim() })
       .select("*").single();
