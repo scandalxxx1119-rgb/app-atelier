@@ -28,12 +28,8 @@ function mapRpcRows(data: RpcRow[]): App[] {
 
 export default function HomeClient({
   initialApps,
-  platinumCount,
-  platinumLimit = 150,
 }: {
   initialApps: App[];
-  platinumCount: number;
-  platinumLimit?: number;
 }) {
   const [apps, setApps] = useState<App[]>(initialApps);
   // サーバーデータがない場合はクライアントでフェッチが必要
@@ -158,26 +154,33 @@ export default function HomeClient({
         <p className="text-zinc-500 dark:text-zinc-400">個人開発者が作ったアプリを発見・応援しよう</p>
       </div>
 
-      {/* Platinum badge counter */}
-      <Link href="/platinum" className="block mb-8">
-        <div className="rounded-xl p-4 bg-gradient-to-r from-sky-100 via-cyan-50 to-indigo-100 dark:from-sky-950 dark:via-cyan-950 dark:to-indigo-950 border border-sky-200 dark:border-sky-800">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-medium mb-0.5">🎉 ローンチ記念・創設メンバー達成</p>
-              <p className="font-bold text-zinc-900 dark:text-zinc-100">
-                PLATINUM会員
-                <span className="ml-2 text-2xl text-sky-600 dark:text-sky-400">{platinumCount}</span>
-                <span className="text-zinc-400 dark:text-zinc-500 font-normal text-sm"> 人が参加中</span>
-              </p>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400 mt-0.5">App Atelierの創設メンバーが集まりました！</p>
-            </div>
-            <div className="flex-shrink-0 text-right">
-              <div className="text-2xl mb-1">🏆</div>
-              <p className="text-xs text-sky-600 dark:text-sky-400 font-bold">目標達成！</p>
-            </div>
+      {/* 注目アプリ（ブースト中） */}
+      {tab === "all" && apps.some((a) => a.isBoosted) && (
+        <div className="mb-8">
+          <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-3">🚀 注目アプリ</p>
+          <div className="flex gap-3 overflow-x-auto pb-1">
+            {apps.filter((a) => a.isBoosted).map((app) => (
+              <Link key={app.id} href={`/apps/${app.id}`}
+                className="flex-shrink-0 w-56 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition-colors">
+                <div className="flex items-center gap-2 mb-2">
+                  {app.icon_url ? (
+                    <img src={app.icon_url} alt={app.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm font-bold text-amber-400 flex-shrink-0">
+                      {app.name[0]}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm truncate">{app.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
+                  </div>
+                </div>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{app.tagline}</p>
+              </Link>
+            ))}
           </div>
         </div>
-      </Link>
+      )}
 
       {/* Tabs */}
       <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 mb-4">

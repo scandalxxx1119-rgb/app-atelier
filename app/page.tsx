@@ -1,6 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
 import HomeClient from "@/components/HomeClient";
-import { PLATINUM_LIMIT } from "@/lib/types";
 import type { App } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -19,21 +18,15 @@ export default async function HomePage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const [appsResult, countResult] = await Promise.all([
-    withTimeout(
-      supabase.rpc("get_home_apps", {
-        p_sort: "created_at",
-        p_tab: "all",
-        p_user_id: null,
-        p_search: "",
-      }),
-      5000
-    ),
-    withTimeout(
-      supabase.from("aa_profiles").select("id", { count: "exact" }).eq("badge", "platinum"),
-      5000
-    ),
-  ]);
+  const appsResult = await withTimeout(
+    supabase.rpc("get_home_apps", {
+      p_sort: "created_at",
+      p_tab: "all",
+      p_user_id: null,
+      p_search: "",
+    }),
+    5000
+  );
 
   let initialApps: App[] = [];
 
@@ -45,13 +38,5 @@ export default async function HomePage() {
     }));
   }
 
-  const platinumCount = countResult?.count ?? 0;
-
-  return (
-    <HomeClient
-      initialApps={initialApps}
-      platinumCount={platinumCount}
-      platinumLimit={PLATINUM_LIMIT}
-    />
-  );
+  return <HomeClient initialApps={initialApps} />;
 }
