@@ -4,8 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
-import Badge, { isPremiumBadge } from "@/components/Badge";
-import type { BadgeType } from "@/components/Badge";
+import Badge from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
 import type { App } from "@/lib/types";
 
@@ -85,11 +84,6 @@ export default function HomeClient({
           appsData = appsData.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
         if (selectedCategories.length > 0)
           appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
-        if (tab !== "mine") {
-          const boostScore = (a: App) =>
-            a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
-          appsData.sort((a, b) => boostScore(b) - boostScore(a));
-        }
         setApps(appsData);
       } catch {
         let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false }).limit(100);
