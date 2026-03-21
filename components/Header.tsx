@@ -35,24 +35,25 @@ export default function Header() {
   };
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <nav className="flex items-center gap-1 text-xs">
+    <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 w-full overflow-hidden">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+        <nav className="flex items-center gap-1 text-xs shrink-0">
           {navLink("/", "ホーム")}
-          {navLink("/resources", "About")}
+          <span className="hidden sm:inline">{navLink("/resources", "About")}</span>
         </nav>
-        <nav className="flex items-center gap-1 text-xs">
+        <nav className="flex items-center gap-1 text-xs shrink-0">
           {user ? (
             <>
               <Link
                 href="/submit"
-                className={`px-4 py-1.5 rounded-full font-medium text-xs whitespace-nowrap transition-all ${
+                className={`px-3 py-1.5 rounded-full font-medium text-xs whitespace-nowrap transition-all ${
                   pathname === "/submit"
                     ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900"
                     : "border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"
                 }`}
               >
-                アプリを投稿
+                <span className="hidden sm:inline">アプリを投稿</span>
+                <span className="sm:hidden">投稿</span>
               </Link>
               <Link
                 href="/profile"
@@ -62,11 +63,12 @@ export default function Header() {
                     : "text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100"
                 }`}
               >
-                マイページ
+                <span className="hidden sm:inline">マイページ</span>
+                <span className="sm:hidden">👤</span>
               </Link>
               <button
                 onClick={() => supabase.auth.signOut()}
-                className="px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors whitespace-nowrap"
+                className="hidden sm:block px-3 py-1.5 text-xs text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors whitespace-nowrap"
               >
                 ログアウト
               </button>
