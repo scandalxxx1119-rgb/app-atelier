@@ -44,6 +44,25 @@ export default function ResourcesPage() {
         </div>
       </section>
 
+      {/* 開発背景 */}
+      <section className="mb-10">
+        <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">開発背景</h2>
+        <div className="p-6 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 space-y-4 text-sm text-zinc-600 dark:text-zinc-300 leading-relaxed">
+          <p>
+            もともと自分自身がアプリ開発の初心者で、テスター募集のやり方もわからず、個人開発だから気軽に頼める人もいない。そんな状況で、せっかく作ったアプリを世に出せないまま終わるのは悲しいと感じていました。
+          </p>
+          <p>
+            Xで調べていると、同じようにテスターを探している個人開発者を見つけました。そこで気づいたんです。個人が開発した良いアプリやゲームが、世に出されなかったり、出ても埋もれてしまうのはもったいないと。
+          </p>
+          <p>
+            Xや他にも個人開発向けのプラットフォームはあるけれど、知らなかったり使い方がわからなかったりする人も多い。それなら自分で作ってしまおうと思いました。
+          </p>
+          <p className="font-medium text-zinc-800 dark:text-zinc-100">
+            個人開発だけど、個人開発者が集まってアトリエのようになれたら——それがApp Atelierの原点です。
+          </p>
+        </div>
+      </section>
+
       {/* Slides */}
       <section>
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">スライド・登壇資料</h2>

@@ -42,7 +42,7 @@ export default function Header() {
         </Link>
         <nav className="flex items-center gap-2 text-sm">
           <Link href="/resources" className="px-3 py-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors hidden sm:block">
-            資料
+            About
           </Link>
           <ThemeToggle />
           {user ? (
