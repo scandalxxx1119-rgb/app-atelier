@@ -30,6 +30,10 @@ export default async function Image({ params }: { params: { id: string } }) {
     }
   }
 
+  const iconSrc = iconData
+    ? (() => { const u = new Uint8Array(iconData!); let s = ""; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return `data:${iconMime};base64,${btoa(s)}`; })()
+    : null;
+
   return new ImageResponse(
     (
       <div
@@ -38,52 +42,91 @@ export default async function Image({ params }: { params: { id: string } }) {
           width: "100%",
           height: "100%",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          padding: "60px",
           fontFamily: "sans-serif",
+          padding: "0",
         }}
       >
-        {iconData && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={(() => { const u = new Uint8Array(iconData!); let s = ""; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return `data:${iconMime};base64,${btoa(s)}`; })()}
-            width={120}
-            height={120}
-            style={{ borderRadius: 24, marginBottom: 32 }}
-          />
-        )}
+        {/* 左: アイコン */}
         <div
           style={{
-            fontSize: 56,
-            fontWeight: 700,
-            color: "#fafafa",
-            marginBottom: 16,
-            textAlign: "center",
+            width: 630,
+            height: 630,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            background: "#18181b",
           }}
         >
-          {app?.name ?? "App Atelier"}
+          {iconSrc ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={iconSrc}
+              width={380}
+              height={380}
+              style={{ borderRadius: 76 }}
+            />
+          ) : (
+            <div
+              style={{
+                width: 380,
+                height: 380,
+                borderRadius: 76,
+                background: "#27272a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 140,
+                color: "#52525b",
+              }}
+            >
+              {(app?.name ?? "A")[0]}
+            </div>
+          )}
         </div>
+
+        {/* 右: テキスト */}
         <div
           style={{
-            fontSize: 28,
-            color: "#a1a1aa",
-            textAlign: "center",
-            maxWidth: 800,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            padding: "60px 60px 60px 56px",
+            gap: 0,
           }}
         >
-          {app?.tagline ?? "個人開発者のアプリショーケース"}
-        </div>
-        <div
-          style={{
-            position: "absolute",
-            bottom: 40,
-            fontSize: 20,
-            color: "#52525b",
-          }}
-        >
-          app-atelier.vercel.app
+          <div
+            style={{
+              fontSize: 22,
+              color: "#71717a",
+              marginBottom: 20,
+              letterSpacing: 2,
+            }}
+          >
+            App Atelier
+          </div>
+          <div
+            style={{
+              fontSize: 54,
+              fontWeight: 700,
+              color: "#fafafa",
+              marginBottom: 24,
+              lineHeight: 1.15,
+            }}
+          >
+            {app?.name ?? "App Atelier"}
+          </div>
+          <div
+            style={{
+              fontSize: 26,
+              color: "#a1a1aa",
+              lineHeight: 1.5,
+            }}
+          >
+            {app?.tagline ?? "個人開発者のアプリショーケース"}
+          </div>
         </div>
       </div>
     ),
