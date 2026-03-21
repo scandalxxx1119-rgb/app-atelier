@@ -20,7 +20,7 @@ export default function PointsPage() {
             { action: "アプリがいいねされる", pt: "+1pt", note: "されるたびに" },
             { action: "テスターに承認される", pt: "+1〜5pt", note: "アプリごとに設定された値" },
             { action: "コメントに開発者から報酬をもらう", pt: "+1〜3pt", note: "開発者が任意で付与" },
-            { action: "Xでアプリをシェアする", pt: "+2pt", note: "1アプリにつき1回" },
+            { action: "Xでアプリをシェアする", pt: "+10pt", note: "1アプリにつき1回" },
           ].map((row, i, arr) => (
             <div key={row.action} className={`flex items-center justify-between px-5 py-4 gap-4 ${i !== arr.length - 1 ? "border-b border-zinc-100 dark:border-zinc-800" : ""}`}>
               <div className="flex-1 min-w-0">

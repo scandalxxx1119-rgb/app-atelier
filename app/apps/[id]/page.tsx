@@ -90,6 +90,7 @@ export default function AppDetailPage() {
   const [isBoosted, setIsBoosted] = useState(false);
   const [boosting, setBoosting] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
+  const [hasShared, setHasShared] = useState(false);
   const [updates, setUpdates] = useState<AppUpdate[]>([]);
   const [updateTitle, setUpdateTitle] = useState("");
   const [updateVersion, setUpdateVersion] = useState("");
@@ -156,6 +157,9 @@ export default function AppDetailPage() {
         const total = (data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
         setUserPoints(total);
       });
+    // シェア済み確認
+    supabase.from("aa_points").select("id").eq("user_id", user.id).eq("app_id", id).eq("reason", "Xでシェア").maybeSingle()
+      .then(({ data }) => setHasShared(!!data));
   }, [user, id]);
 
   const handleLike = async () => {
@@ -391,7 +395,14 @@ export default function AppDetailPage() {
         {safeUrl(app.url) && <a href={safeUrl(app.url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🌐 Web</a>}
         {safeUrl(app.github_url) && <a href={safeUrl(app.github_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">🐙 GitHub</a>}
         {safeUrl(app.twitter_url) && <a href={safeUrl(app.twitter_url)!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">𝕏 フォロー</a>}
-        <button onClick={handleXShare} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors ml-auto">𝕏 シェア</button>
+        <div className="flex flex-col items-end gap-1 ml-auto">
+          <button onClick={handleXShare} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${hasShared ? "border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950" : "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
+            {hasShared ? "✓ シェア済み" : "𝕏 シェア"}
+          </button>
+          {!hasShared && user && (
+            <span className="text-[10px] text-zinc-400">シェアで+10pt（1回限り）</span>
+          )}
+        </div>
         <button onClick={handleShare} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">{copied ? "✓ コピー済み" : "🔗 リンク"}</button>
       </div>
 
