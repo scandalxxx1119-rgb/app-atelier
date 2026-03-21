@@ -101,6 +101,10 @@ export default function AppDetailPage() {
   const [updateFormOpen, setUpdateFormOpen] = useState(false);
   const [postingUpdate, setPostingUpdate] = useState(false);
   const [relatedApps, setRelatedApps] = useState<RelatedApp[]>([]);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reporting, setReporting] = useState(false);
+  const [reportDone, setReportDone] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
@@ -329,6 +333,17 @@ export default function AppDetailPage() {
     );
   }
 
+  const handleReport = async () => {
+    if (!user || !reportReason.trim()) return;
+    setReporting(true);
+    await supabase.from("aa_reports").insert({
+      app_id: app.id, reporter_id: user.id, reason: reportReason.trim(),
+    });
+    setReporting(false);
+    setReportDone(true);
+    setReportReason("");
+  };
+
   const youtubeId = app.youtube_url ? getYoutubeId(app.youtube_url) : null;
   const shots = app.screenshot_urls ?? [];
   const isTesterApp = (app.tester_slots ?? 0) > 0;
@@ -425,7 +440,46 @@ export default function AppDetailPage() {
             </button>
           )
         )}
+        {user && !isOwner && (
+          <button onClick={() => { setReportOpen(true); setReportDone(false); }}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-400 hover:text-red-500 hover:border-red-200 dark:hover:border-red-900 transition-colors">
+            🚩 通報
+          </button>
+        )}
       </div>
+
+      {/* 通報モーダル */}
+      {reportOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setReportOpen(false)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">このアプリを通報する</h3>
+            <p className="text-xs text-zinc-400 mb-4">運営が確認の上、対応します。</p>
+            {reportDone ? (
+              <div className="text-center py-4">
+                <p className="text-sm font-medium text-green-600 dark:text-green-400">✓ 通報を受け付けました</p>
+                <button onClick={() => setReportOpen(false)} className="mt-4 px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium">閉じる</button>
+              </div>
+            ) : (
+              <>
+                <textarea
+                  value={reportReason}
+                  onChange={(e) => setReportReason(e.target.value)}
+                  placeholder="通報理由を入力してください（例：詐欺アプリ、マルウェアが含まれる等）"
+                  className="w-full border border-zinc-200 dark:border-zinc-700 rounded-lg p-3 text-sm bg-zinc-50 dark:bg-zinc-800 resize-none h-24 focus:outline-none"
+                />
+                <div className="flex gap-2 mt-3">
+                  <button onClick={() => setReportOpen(false)}
+                    className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm">キャンセル</button>
+                  <button onClick={handleReport} disabled={!reportReason.trim() || reporting}
+                    className="flex-1 py-2 rounded-lg bg-red-500 text-white text-sm font-medium disabled:opacity-50">
+                    {reporting ? "送信中..." : "通報する"}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Tester recruitment */}
       {isTesterApp && (
