@@ -35,6 +35,8 @@ export default function ProfilePage() {
   const [apps, setApps] = useState<App[]>([]);
   const [points, setPoints] = useState(0);
   const [testerScore, setTesterScore] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -52,7 +54,7 @@ export default function ProfilePage() {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
 
-      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes] = await Promise.all([
+      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes] = await Promise.all([
         supabase.from("aa_profiles")
           .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
@@ -70,6 +72,8 @@ export default function ProfilePage() {
           .eq("user_id", data.user.id)
           .like("reason", "%コメント報酬%")
           .gte("amount", 2),
+        supabase.from("aa_follows").select("id", { count: "exact" }).eq("following_id", data.user.id),
+        supabase.from("aa_follows").select("id", { count: "exact" }).eq("follower_id", data.user.id),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
@@ -90,6 +94,8 @@ export default function ProfilePage() {
           if (boostData) setBoostedAppIds(new Set(boostData.map((b: { app_id: string }) => b.app_id)));
         });
       setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
+      setFollowersCount(followersRes.count ?? 0);
+      setFollowingCount(followingRes.count ?? 0);
       setLoading(false);
     });
   }, [router]);
@@ -326,11 +332,14 @@ export default function ProfilePage() {
       {/* Points */}
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
         <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">ポイント残高</h2>
-        <div className="flex items-end gap-1">
+        <div className="flex items-end gap-1 mb-3">
           <span className="text-3xl font-bold">{points.toLocaleString()}</span>
           <span className="text-sm text-zinc-400 mb-1">pt</span>
         </div>
-        <p className="text-xs text-zinc-400 mt-1">テスター参加などで獲得できます</p>
+        <div className="flex items-center gap-4 text-sm">
+          <span className="text-zinc-500"><strong className="text-zinc-900 dark:text-zinc-100">{followersCount}</strong> フォロワー</span>
+          <span className="text-zinc-500"><strong className="text-zinc-900 dark:text-zinc-100">{followingCount}</strong> フォロー中</span>
+        </div>
       </section>
 
       {/* Account deletion */}

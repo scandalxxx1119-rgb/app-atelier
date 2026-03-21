@@ -6,6 +6,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import Badge, { DevBadge, TesterBadge } from "@/components/Badge";
 import { safeUrl } from "@/lib/sanitize";
+import type { User } from "@supabase/supabase-js";
 
 type Profile = {
   id: string;
@@ -34,6 +35,11 @@ export default function UserProfilePage() {
   const [apps, setApps] = useState<App[]>([]);
   const [testerScore, setTesterScore] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
     supabase.from("aa_profiles").select("id, username, badge, bio, twitter_url, github_url, website_url, avatar_url")
@@ -41,7 +47,7 @@ export default function UserProfilePage() {
       .then(async ({ data }) => {
         if (!data) { setLoading(false); return; }
         setProfile(data as Profile);
-        const [appsRes, testerRes, highRatingRes] = await Promise.all([
+        const [appsRes, testerRes, highRatingRes, followersRes, followingRes] = await Promise.all([
           supabase.from("aa_apps")
             .select("id, name, tagline, icon_url, tags, likes_count, status")
             .eq("user_id", data.id).order("created_at", { ascending: false }),
@@ -53,12 +59,50 @@ export default function UserProfilePage() {
             .eq("user_id", data.id)
             .like("reason", "%コメント報酬%")
             .gte("amount", 2),
+          supabase.from("aa_follows").select("id", { count: "exact" }).eq("following_id", data.id),
+          supabase.from("aa_follows").select("id", { count: "exact" }).eq("follower_id", data.id),
         ]);
         setApps((appsRes.data as App[]) ?? []);
         setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
+        setFollowersCount(followersRes.count ?? 0);
+        setFollowingCount(followingRes.count ?? 0);
         setLoading(false);
       });
   }, [username]);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user ?? null));
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser || !profile || currentUser.id === profile.id) return;
+    supabase.from("aa_follows")
+      .select("id")
+      .eq("follower_id", currentUser.id)
+      .eq("following_id", profile.id)
+      .maybeSingle()
+      .then(({ data }) => setIsFollowing(!!data));
+  }, [currentUser, profile]);
+
+  const handleFollow = async () => {
+    if (!currentUser || !profile) return;
+    setFollowLoading(true);
+    if (isFollowing) {
+      await supabase.from("aa_follows").delete()
+        .eq("follower_id", currentUser.id)
+        .eq("following_id", profile.id);
+      setIsFollowing(false);
+      setFollowersCount((n) => n - 1);
+    } else {
+      await supabase.from("aa_follows").insert({
+        follower_id: currentUser.id,
+        following_id: profile.id,
+      });
+      setIsFollowing(true);
+      setFollowersCount((n) => n + 1);
+    }
+    setFollowLoading(false);
+  };
 
   if (loading) return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -81,7 +125,7 @@ export default function UserProfilePage() {
             : profile.username[0].toUpperCase()
           }
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-xl font-bold">{profile.username}</h1>
             {profile.badge && <Badge badge={profile.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} />}
@@ -89,6 +133,10 @@ export default function UserProfilePage() {
             <TesterBadge score={testerScore} />
           </div>
           {profile.bio && <p className="text-sm text-zinc-500 dark:text-zinc-400 mb-2">{profile.bio}</p>}
+          <div className="flex items-center gap-3 text-sm text-zinc-400 mb-2">
+            <span><strong className="text-zinc-900 dark:text-zinc-100">{followersCount}</strong> フォロワー</span>
+            <span><strong className="text-zinc-900 dark:text-zinc-100">{followingCount}</strong> フォロー中</span>
+          </div>
           <div className="flex items-center gap-2 flex-wrap mt-1">
             <p className="text-sm text-zinc-400 mr-1">{apps.length}個のアプリを投稿</p>
             {safeUrl(profile.twitter_url) && (
@@ -111,6 +159,19 @@ export default function UserProfilePage() {
             )}
           </div>
         </div>
+        {currentUser && currentUser.id !== profile.id && (
+          <button
+            onClick={handleFollow}
+            disabled={followLoading}
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors disabled:opacity-50 ${
+              isFollowing
+                ? "border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-300 hover:border-red-300 hover:text-red-500"
+                : "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 hover:opacity-80"
+            }`}
+          >
+            {followLoading ? "..." : isFollowing ? "フォロー中" : "フォローする"}
+          </button>
+        )}
       </div>
 
       <div className="space-y-3">
