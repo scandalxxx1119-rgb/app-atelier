@@ -1,8 +1,16 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = { title: "PLATINUMバッジとは | App Atelier" };
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function PlatinumPage() {
+  const [loggedIn, setLoggedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setLoggedIn(!!data.user));
+  }, []);
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       {/* ヘッダー */}
@@ -67,13 +75,27 @@ export default function PlatinumPage() {
 
       {/* CTA */}
       <div className="text-center">
-        <Link
-          href="/auth"
-          className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 text-white font-bold hover:opacity-90 transition-opacity shadow-md"
-        >
-          今すぐ登録してPLATINUMバッジをもらう
-        </Link>
-        <p className="text-xs text-zinc-400 mt-3">登録は無料です</p>
+        {loggedIn ? (
+          <>
+            <Link
+              href="/profile"
+              className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 text-white font-bold hover:opacity-90 transition-opacity shadow-md"
+            >
+              マイページでバッジを確認する
+            </Link>
+            <p className="text-xs text-zinc-400 mt-3">すでに登録済みです</p>
+          </>
+        ) : (
+          <>
+            <Link
+              href="/auth"
+              className="inline-block px-8 py-3 rounded-full bg-gradient-to-r from-sky-400 to-indigo-400 text-white font-bold hover:opacity-90 transition-opacity shadow-md"
+            >
+              今すぐ登録してPLATINUMバッジをもらう
+            </Link>
+            <p className="text-xs text-zinc-400 mt-3">登録は無料です</p>
+          </>
+        )}
       </div>
     </div>
   );
