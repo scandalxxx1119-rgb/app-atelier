@@ -38,6 +38,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [boostedAppIds, setBoostedAppIds] = useState<Set<string>>(new Set());
+  const [boostingId, setBoostingId] = useState<string | null>(null);
+  const BOOST_COST = 50;
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -80,6 +83,12 @@ export default function ProfilePage() {
       setApps((appsRes.data as App[]) ?? []);
       const total = (pointsRes.data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
       setPoints(total);
+      // ブースト済みアプリを取得
+      supabase.from("aa_boosts").select("app_id").eq("user_id", data.user.id)
+        .gt("expires_at", new Date().toISOString())
+        .then(({ data: boostData }) => {
+          if (boostData) setBoostedAppIds(new Set(boostData.map((b: { app_id: string }) => b.app_id)));
+        });
       setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
       setLoading(false);
     });
@@ -152,6 +161,21 @@ export default function ProfilePage() {
       setNewEmail("");
     }
     setEmailSaving(false);
+  };
+
+  const handleBoost = async (appId: string, appName: string) => {
+    if (!user) return;
+    if (points < BOOST_COST) {
+      alert(`ブーストには${BOOST_COST}ptが必要です（現在${points}pt）`);
+      return;
+    }
+    setBoostingId(appId);
+    const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("aa_boosts").insert({ app_id: appId, user_id: user.id, type: "featured", expires_at: expiresAt });
+    await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${appName}」をブースト`, app_id: appId });
+    setBoostedAppIds((prev) => new Set([...prev, appId]));
+    setPoints((p) => p - BOOST_COST);
+    setBoostingId(null);
   };
 
   const handleDelete = async (appId: string) => {
@@ -353,7 +377,20 @@ export default function ProfilePage() {
                 <div className="flex items-center gap-1 text-xs text-zinc-400 mr-2">
                   <span>♥</span><span>{app.likes_count}</span>
                 </div>
-                <div className="flex gap-2 flex-shrink-0">
+                <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                  {boostedAppIds.has(app.id) ? (
+                    <span className="px-3 py-1.5 text-xs rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 font-medium">
+                      🚀 ブースト中
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handleBoost(app.id, app.name)}
+                      disabled={boostingId === app.id}
+                      className="px-3 py-1.5 text-xs rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950 transition-colors disabled:opacity-50"
+                    >
+                      {boostingId === app.id ? "処理中..." : `🚀 ブースト`}
+                    </button>
+                  )}
                   <Link href={`/apps/${app.id}`}
                     className="px-3 py-1.5 text-xs rounded-lg border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
                     見る

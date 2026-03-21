@@ -47,6 +47,10 @@ export default function HomeClient({
   const [categoryOpen, setCategoryOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [userPoints, setUserPoints] = useState(0);
+  const [boostedAppIds, setBoostedAppIds] = useState<Set<string>>(new Set());
+  const [boostingId, setBoostingId] = useState<string | null>(null);
+  const BOOST_COST = 50;
   // サーバーデータがある場合のみ初回フェッチをスキップ
   const isInitialRender = useRef(initialApps.length > 0);
 
@@ -106,10 +110,43 @@ export default function HomeClient({
 
   useEffect(() => { setCurrentPage(1); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
 
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("aa_points").select("amount").eq("user_id", user.id)
+      .then(({ data }) => {
+        const total = (data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
+        setUserPoints(total);
+      });
+  }, [user]);
+
+  useEffect(() => {
+    if (tab !== "mine" || !user) return;
+    supabase.from("aa_boosts").select("app_id").eq("user_id", user.id)
+      .gt("expires_at", new Date().toISOString())
+      .then(({ data }) => {
+        if (data) setBoostedAppIds(new Set(data.map((b: { app_id: string }) => b.app_id)));
+      });
+  }, [tab, user]);
+
   const togglePlatform = (tag: string) =>
     setSelectedPlatforms((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
   const toggleCategory = (tag: string) =>
     setSelectedCategories((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+
+  const handleBoost = async (appId: string, appName: string) => {
+    if (!user) return;
+    if (userPoints < BOOST_COST) {
+      alert(`ブーストには${BOOST_COST}ptが必要です（現在${userPoints}pt）`);
+      return;
+    }
+    setBoostingId(appId);
+    const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    await supabase.from("aa_boosts").insert({ app_id: appId, user_id: user.id, type: "featured", expires_at: expiresAt });
+    await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${appName}」をブースト`, app_id: appId });
+    setBoostedAppIds((prev) => new Set([...prev, appId]));
+    setUserPoints((p) => p - BOOST_COST);
+    setBoostingId(null);
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -241,51 +278,67 @@ export default function HomeClient({
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {apps.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((app) => (
-              <Link key={app.id} href={`/apps/${app.id}`}
-                className="group block rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-5 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors">
-                <div className="flex items-start gap-3 mb-3">
-                  {app.icon_url ? (
-                    <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-xl font-bold text-zinc-400">
-                      {app.name[0]}
+              <div key={app.id} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:border-zinc-400 dark:hover:border-zinc-600 transition-colors overflow-hidden flex flex-col">
+                <Link href={`/apps/${app.id}`} className="block p-5 flex-1">
+                  <div className="flex items-start gap-3 mb-3">
+                    {app.icon_url ? (
+                      <img src={app.icon_url} alt={app.name} className="w-12 h-12 rounded-xl object-cover flex-shrink-0" />
+                    ) : (
+                      <div className="w-12 h-12 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center flex-shrink-0 text-xl font-bold text-zinc-400">
+                        {app.name[0]}
+                      </div>
+                    )}
+                    <div className="min-w-0 flex-1">
+                      <h2 className="font-semibold truncate">{app.name}</h2>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
+                        {app.aa_profiles?.badge && (
+                          <Badge badge={app.aa_profiles.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} size="xs" />
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <h2 className="font-semibold truncate">{app.name}</h2>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
-                      {app.aa_profiles?.badge && (
-                        <Badge badge={app.aa_profiles.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} size="xs" />
-                      )}
+                    <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                      <span>♥</span><span>{app.likes_count}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
-                    <span>♥</span><span>{app.likes_count}</span>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
+                  <div className="flex flex-wrap gap-1">
+                    {app.isBoosted && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚀 注目</span>
+                    )}
+                    {(!app.status || app.status === "released") && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
+                    )}
+                    {app.status === "beta" && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-medium">β ベータ版</span>
+                    )}
+                    {app.status === "dev" && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚧 開発中</span>
+                    )}
+                    {app.tags && app.tags.slice(0, 3).map((tag) => (
+                      <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">{tag}</span>
+                    ))}
+                    {app.tags && app.tags.length > 3 && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">+{app.tags.length - 3}</span>
+                    )}
                   </div>
-                </div>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
-                <div className="flex flex-wrap gap-1">
-                  {app.isBoosted && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚀 注目</span>
-                  )}
-                  {(!app.status || app.status === "released") && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
-                  )}
-                  {app.status === "beta" && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300 font-medium">β ベータ版</span>
-                  )}
-                  {app.status === "dev" && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300 font-medium">🚧 開発中</span>
-                  )}
-                  {app.tags && app.tags.slice(0, 3).map((tag) => (
-                    <span key={tag} className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400">{tag}</span>
-                  ))}
-                  {app.tags && app.tags.length > 3 && (
-                    <span className="px-2 py-0.5 text-xs rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-400">+{app.tags.length - 3}</span>
-                  )}
-                </div>
-              </Link>
+                </Link>
+                {tab === "mine" && (
+                  <div className="px-5 py-2.5 border-t border-zinc-100 dark:border-zinc-800">
+                    {boostedAppIds.has(app.id) ? (
+                      <span className="text-xs text-amber-500 font-medium">🚀 ブースト中</span>
+                    ) : (
+                      <button
+                        onClick={() => handleBoost(app.id, app.name)}
+                        disabled={boostingId === app.id}
+                        className="w-full py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950 text-xs font-medium transition-colors disabled:opacity-50"
+                      >
+                        {boostingId === app.id ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・3日間)`}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
           {apps.length > PAGE_SIZE && (

@@ -362,14 +362,6 @@ export default function AppDetailPage() {
                 {isTesterApp && (
                   <Link href={`/apps/${app.id}/testers`} className="text-xs text-blue-500 hover:underline">テスター管理</Link>
                 )}
-                {isBoosted ? (
-                  <span className="text-xs text-amber-500 font-medium">🚀 ブースト中</span>
-                ) : (
-                  <button onClick={handleBoost} disabled={boosting}
-                    className="text-xs text-zinc-400 hover:text-amber-500 transition-colors disabled:opacity-50">
-                    {boosting ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・3日間)`}
-                  </button>
-                )}
               </>
             )}
           </div>
@@ -405,6 +397,18 @@ export default function AppDetailPage() {
           )}
         </div>
         <button onClick={handleShare} className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">{copied ? "✓ コピー済み" : "🔗 リンク"}</button>
+        {isOwner && (
+          isBoosted ? (
+            <span className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 text-sm font-medium">
+              🚀 ブースト中
+            </span>
+          ) : (
+            <button onClick={handleBoost} disabled={boosting}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg border border-amber-200 dark:border-amber-800 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950 text-sm font-medium transition-colors disabled:opacity-50">
+              {boosting ? "処理中..." : `🚀 ブースト (${BOOST_COST}pt・3日間)`}
+            </button>
+          )
+        )}
       </div>
 
       {/* Tester recruitment */}
