@@ -312,8 +312,8 @@ export default function AppDetailPage() {
   const handleXShare = async () => {
     const text = `【${app?.name}】${app?.tagline}\n\nApp Atelierで公開中の個人開発アプリです！気になった方はぜひチェックを👀\n\n#個人開発 #appatelier`;
     window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, "_blank");
-    // 1アプリにつき1回だけ+10pt
-    if (user && app) {
+    // 1アプリにつき1回だけ+10pt（自分のアプリは対象外）
+    if (user && app && user.id !== app.user_id) {
       const { data: existing } = await supabase.from("aa_points")
         .select("id").eq("user_id", user.id).eq("app_id", app.id).eq("reason", "Xでシェア").maybeSingle();
       if (!existing) {
@@ -423,7 +423,7 @@ export default function AppDetailPage() {
           <button onClick={handleXShare} className={`flex items-center gap-1.5 px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${hasShared ? "border-green-300 dark:border-green-700 text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950" : "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
             {hasShared ? "✓ シェア済み" : "𝕏 シェア"}
           </button>
-          {!hasShared && user && (
+          {!hasShared && user && !isOwner && (
             <span className="text-[10px] text-zinc-400">シェアで+10pt（1回限り）</span>
           )}
         </div>
