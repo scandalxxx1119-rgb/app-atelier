@@ -9,7 +9,7 @@ import type { BadgeType } from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
 import type { App } from "@/lib/types";
 
-type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null };
+type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null; is_boosted?: boolean };
 
 const SORT_OPTIONS = [
   { label: "新着", value: "created_at" },
@@ -22,6 +22,7 @@ function mapRpcRows(data: RpcRow[]): App[] {
   return data.map((a) => ({
     ...a,
     aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
+    isBoosted: a.is_boosted ?? false,
   }));
 }
 

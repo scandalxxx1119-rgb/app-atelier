@@ -5,7 +5,7 @@ import type { App } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
-type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null };
+type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null; is_boosted?: boolean };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function withTimeout(promise: PromiseLike<any>, ms: number): Promise<any> {
@@ -41,6 +41,7 @@ export default async function HomePage() {
     initialApps = (appsResult.data as RpcRow[]).map((a) => ({
       ...a,
       aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
+      isBoosted: a.is_boosted ?? false,
     }));
   }
 
