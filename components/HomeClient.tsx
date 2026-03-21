@@ -158,24 +158,21 @@ export default function HomeClient({
       {tab === "all" && apps.some((a) => a.isBoosted) && (
         <div className="mb-8">
           <p className="text-xs font-semibold text-amber-500 uppercase tracking-wide mb-3">🚀 注目アプリ</p>
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="flex gap-2 overflow-x-auto pb-1">
             {apps.filter((a) => a.isBoosted).map((app) => (
               <Link key={app.id} href={`/apps/${app.id}`}
-                className="flex-shrink-0 w-56 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 p-4 hover:border-amber-400 dark:hover:border-amber-600 transition-colors">
-                <div className="flex items-center gap-2 mb-2">
-                  {app.icon_url ? (
-                    <img src={app.icon_url} alt={app.name} className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm font-bold text-amber-400 flex-shrink-0">
-                      {app.name[0]}
-                    </div>
-                  )}
-                  <div className="min-w-0">
-                    <p className="font-semibold text-sm truncate">{app.name}</p>
-                    <p className="text-xs text-zinc-400 truncate">{app.aa_profiles?.username ?? "anonymous"}</p>
+                className="flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950 hover:border-amber-400 dark:hover:border-amber-600 transition-colors">
+                {app.icon_url ? (
+                  <img src={app.icon_url} alt={app.name} className="w-8 h-8 rounded-lg object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center text-sm font-bold text-amber-400 flex-shrink-0">
+                    {app.name[0]}
                   </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate max-w-28">{app.name}</p>
+                  <p className="text-xs text-zinc-400 truncate max-w-28">{app.aa_profiles?.username ?? "anonymous"}</p>
                 </div>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400 line-clamp-2">{app.tagline}</p>
               </Link>
             ))}
           </div>
