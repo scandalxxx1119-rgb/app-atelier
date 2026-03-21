@@ -11,6 +11,7 @@ export default function TermsPage() {
           <p>
             本利用規約（以下「本規約」）は、App Atelier（以下「本サービス」）の利用条件を定めるものです。
             ユーザーは本規約に同意した上で本サービスをご利用ください。
+            本サービスを利用した時点で、本規約に同意したものとみなします。
           </p>
         </section>
 
@@ -28,27 +29,46 @@ export default function TermsPage() {
           <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">3. 禁止事項</h2>
           <p>以下の行為を禁止します。</p>
           <ul className="list-disc list-inside mt-2 space-y-1 text-zinc-600 dark:text-zinc-400">
-            <li>他者の権利（著作権・商標権等）を侵害するコンテンツの投稿</li>
+            <li>他者の権利（著作権・商標権・特許権等）を侵害するコンテンツの投稿</li>
             <li>虚偽・誇大な情報の投稿</li>
             <li>スパム・広告目的の投稿</li>
             <li>他のユーザーへの嫌がらせ・誹謗中傷</li>
             <li>違法・有害なコンテンツの投稿</li>
+            <li>マルウェア・ウイルス・スパイウェア等を含むアプリの投稿</li>
+            <li>フィッシング・詐欺・不正請求を目的としたアプリの投稿</li>
+            <li>個人情報を無断収集するアプリの投稿</li>
+            <li>実在しないアプリや動作しないアプリの投稿</li>
             <li>本サービスのシステムへの不正アクセス・攻撃</li>
             <li>複数アカウントを用いた不正行為</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">4. 投稿コンテンツ</h2>
-          <p>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">4. 投稿コンテンツと審査について</h2>
+          <p className="mb-2">
             ユーザーが投稿したコンテンツの著作権はユーザーに帰属します。
             ただし、本サービスの運営・改善・プロモーションのために必要な範囲で利用することを許諾するものとします。
-            投稿内容が本規約に違反する場合、予告なく削除することがあります。
+          </p>
+          <p className="mb-2">
+            <strong className="text-zinc-900 dark:text-zinc-100">本サービスは投稿内容の事前審査を行いません。</strong>
+            投稿されたアプリ・コンテンツの正確性・安全性・合法性はユーザー自身の責任に帰属します。
+          </p>
+          <p>
+            投稿内容が本規約に違反すると判断した場合、または違反の通報を受けた場合、予告なくコンテンツの削除・アカウントの停止を行うことがあります。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">5. 無料プランについて</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">5. 違反の通報</h2>
+          <p>
+            規約違反のコンテンツを発見した場合は、<a href="/contact" className="underline text-zinc-500">お問い合わせ</a>よりご報告ください。
+            運営者は通報を受けた内容を確認し、必要に応じて対応します。
+            ただし、すべての通報に対して対応・回答を保証するものではありません。
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">6. 無料プランについて</h2>
           <p>
             現在提供している無料プランは、サービスの普及を目的とした特典です。
             将来的に有料プランを導入する場合、既存ユーザーには事前に告知します。
@@ -57,7 +77,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">6. ポイント制度について</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">7. ポイント制度について</h2>
           <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
             <li>ポイントはサービス内でのみ使用できる仮想ポイントです</li>
             <li>ポイントは現金・電子マネー・その他の財物と交換することはできません</li>
@@ -68,17 +88,19 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">7. 免責事項</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. 免責事項</h2>
           <ul className="list-disc list-inside space-y-1 text-zinc-600 dark:text-zinc-400">
             <li>本サービスは現状有姿で提供します。動作の完全性・継続性を保証しません</li>
+            <li>本サービスに掲載されたアプリは運営者が審査・保証するものではありません</li>
+            <li>掲載アプリの利用により生じたいかなる損害についても運営者は責任を負いません</li>
             <li>ユーザー間のトラブルについて、運営者は責任を負いません</li>
-            <li>投稿されたアプリ・コンテンツの正確性・安全性について保証しません</li>
+            <li>投稿されたアプリ・コンテンツの正確性・安全性・合法性について保証しません</li>
             <li>本サービスの利用により生じた損害について、運営者の故意・重過失による場合を除き責任を負いません</li>
           </ul>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">8. サービスの変更・停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. サービスの変更・停止</h2>
           <p>
             運営者は、ユーザーへの事前通知なくサービスの内容を変更・停止・終了することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -86,21 +108,22 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">9. アカウント停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. アカウント停止</h2>
           <p>
-            本規約に違反した場合、予告なくアカウントを停止・削除することがあります。
+            本規約に違反した場合、または違反が疑われる場合、予告なくアカウントを停止・削除することがあります。
+            これによりユーザーに生じた損害について責任を負いません。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. 準拠法・管轄</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. 準拠法・管轄</h2>
           <p>
             本規約は日本法に準拠します。本サービスに関する紛争については、運営者の所在地を管轄する裁判所を合意管轄とします。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. お問い合わせ</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">12. お問い合わせ</h2>
           <p>
             本規約に関するお問い合わせは<a href="/contact" className="underline text-zinc-500">こちら</a>からご連絡ください。
           </p>
