@@ -3,7 +3,7 @@ import HomeClient from "@/components/HomeClient";
 import { PLATINUM_LIMIT } from "@/lib/types";
 import type { App } from "@/lib/types";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null };
 
