@@ -48,7 +48,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    supabase.from("aa_profiles").select("id", { count: "exact" })
+    supabase.from("aa_profiles").select("id", { count: "exact", head: true })
       .eq("badge", "platinum")
       .then(({ count }) => setPlatinumCount(count ?? 0));
   }, []);
@@ -61,23 +61,26 @@ export default function HomePage() {
     query.then(async ({ data }) => {
       let appsData = (data as App[]) ?? [];
 
-      // プロフィールを個別クエリで取得
+      // プロフィールとブーストを並列取得
       const userIds = [...new Set(appsData.map((a) => a.user_id))];
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("aa_profiles").select("id, username, badge").in("id", userIds);
-        const profileMap: Record<string, { username: string; badge: string | null }> = {};
-        profiles?.forEach((p: { id: string; username: string; badge: string | null }) => {
-          profileMap[p.id] = { username: p.username, badge: p.badge };
-        });
-        appsData = appsData.map((a) => ({ ...a, aa_profiles: profileMap[a.user_id] ?? null }));
-      }
+      const [profilesRes, boostsRes] = await Promise.all([
+        userIds.length > 0
+          ? supabase.from("aa_profiles").select("id, username, badge").in("id", userIds)
+          : Promise.resolve({ data: [] }),
+        supabase.from("aa_boosts").select("app_id").gt("expires_at", new Date().toISOString()),
+      ]);
 
-      // ブースト中のアプリ取得
-      const { data: boosts } = await supabase.from("aa_boosts").select("app_id")
-        .gt("expires_at", new Date().toISOString());
-      const boostedIds = new Set((boosts ?? []).map((b: { app_id: string }) => b.app_id));
-      appsData = appsData.map((a) => ({ ...a, isBoosted: boostedIds.has(a.id) }));
+      const profileMap: Record<string, { username: string; badge: string | null }> = {};
+      profilesRes.data?.forEach((p: { id: string; username: string; badge: string | null }) => {
+        profileMap[p.id] = { username: p.username, badge: p.badge };
+      });
+      const boostedIds = new Set((boostsRes.data ?? []).map((b: { app_id: string }) => b.app_id));
+
+      appsData = appsData.map((a) => ({
+        ...a,
+        aa_profiles: profileMap[a.user_id] ?? null,
+        isBoosted: boostedIds.has(a.id),
+      }));
 
       let filtered = appsData;
       if (search) {
