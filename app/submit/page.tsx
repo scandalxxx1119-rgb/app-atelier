@@ -9,12 +9,22 @@ import { validateImageFile } from "@/lib/sanitize";
 import type { User } from "@supabase/supabase-js";
 
 function Tooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
   return (
-    <span className="relative group inline-flex items-center">
-      <span className="w-4 h-4 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 text-[10px] flex items-center justify-center cursor-help font-bold select-none">?</span>
-      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 w-60 px-3 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs invisible group-hover:visible z-10 leading-relaxed pointer-events-none whitespace-normal">
-        {text}
-      </span>
+    <span className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setOpen((v) => !v); }}
+        className="w-4 h-4 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-500 text-[10px] flex items-center justify-center cursor-pointer font-bold select-none hover:bg-zinc-300 dark:hover:bg-zinc-600 transition-colors flex-shrink-0"
+      >
+        ?
+      </button>
+      {open && (
+        <span className="absolute bottom-full left-0 mb-1.5 w-60 px-3 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-700 text-white text-xs z-20 leading-relaxed shadow-lg whitespace-normal">
+          {text}
+          <button type="button" onClick={() => setOpen(false)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+        </span>
+      )}
     </span>
   );
 }
