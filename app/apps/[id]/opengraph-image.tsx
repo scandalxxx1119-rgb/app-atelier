@@ -17,17 +17,16 @@ export default async function Image({ params }: { params: { id: string } }) {
     .eq("id", params.id)
     .single();
 
-  // edge runtimeで外部画像を読み込むためにfetchしてbase64に変換
-  let iconSrc: string | null = null;
+  // edge runtimeで外部画像をfetchしてArrayBufferとして渡す（BufferはNG）
+  let iconData: ArrayBuffer | null = null;
+  let iconMime = "image/png";
   if (app?.icon_url) {
     try {
       const res = await fetch(app.icon_url);
-      const buf = await res.arrayBuffer();
-      const base64 = Buffer.from(buf).toString("base64");
-      const mime = res.headers.get("content-type") ?? "image/png";
-      iconSrc = `data:${mime};base64,${base64}`;
+      iconData = await res.arrayBuffer();
+      iconMime = res.headers.get("content-type") ?? "image/png";
     } catch {
-      iconSrc = null;
+      iconData = null;
     }
   }
 
@@ -46,9 +45,10 @@ export default async function Image({ params }: { params: { id: string } }) {
           fontFamily: "sans-serif",
         }}
       >
-        {iconSrc && (
+        {iconData && (
+          // eslint-disable-next-line @next/next/no-img-element
           <img
-            src={iconSrc}
+            src={(() => { const u = new Uint8Array(iconData!); let s = ""; for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return `data:${iconMime};base64,${btoa(s)}`; })()}
             width={120}
             height={120}
             style={{ borderRadius: 24, marginBottom: 32 }}
