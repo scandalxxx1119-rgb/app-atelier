@@ -115,7 +115,24 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. サービスの変更・停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">10. 外部リンク・第三者サービス</h2>
+          <p>
+            本サービスには、外部のウェブサイト・App Store・Google Play等への外部リンクが含まれます。
+            これらの外部サービスは本サービスの管理下になく、その内容・安全性・正確性について一切責任を負いません。
+            外部サービスの利用は、各サービスの利用規約・プライバシーポリシーに従ってください。
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. 知的財産権</h2>
+          <p>
+            本サービスのロゴ・デザイン・テキスト等（ユーザー投稿コンテンツを除く）に関する知的財産権は運営者に帰属します。
+            無断で複製・転載・改変することを禁止します。
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">12. サービスの変更・停止</h2>
           <p>
             運営者は、ユーザーへの事前通知なくサービスの内容を変更・停止・終了することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -123,7 +140,7 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">11. アカウント停止</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">13. アカウント停止</h2>
           <p>
             本規約に違反した場合、または違反が疑われる場合、予告なくアカウントを停止・削除することがあります。
             これによりユーザーに生じた損害について責任を負いません。
@@ -131,14 +148,14 @@ export default function TermsPage() {
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">12. 準拠法・管轄</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">14. 準拠法・管轄</h2>
           <p>
             本規約は日本法に準拠します。本サービスに関する紛争については、運営者の所在地を管轄する裁判所を合意管轄とします。
           </p>
         </section>
 
         <section>
-          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">13. お問い合わせ</h2>
+          <h2 className="font-bold text-base text-zinc-900 dark:text-zinc-100 mb-2">15. お問い合わせ</h2>
           <p>
             本規約に関するお問い合わせは<a href="/contact" className="underline text-zinc-500">こちら</a>からご連絡ください。
           </p>
