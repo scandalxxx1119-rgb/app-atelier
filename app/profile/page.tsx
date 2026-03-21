@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const [boostedAppIds, setBoostedAppIds] = useState<Set<string>>(new Set());
   const [boostingId, setBoostingId] = useState<string | null>(null);
   const BOOST_COST = 50;
+  const [memberCount, setMemberCount] = useState<number | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -100,6 +101,12 @@ export default function ProfilePage() {
       setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
       setFollowersCount(followersRes.count ?? 0);
       setFollowingCount(followingRes.count ?? 0);
+
+      if (profileRes.data?.badge === "master") {
+        supabase.from("aa_profiles").select("*", { count: "exact", head: true })
+          .then(({ count }) => setMemberCount(count ?? 0));
+      }
+
       setLoading(false);
 
       // フォロワーリスト取得
@@ -361,6 +368,11 @@ export default function ProfilePage() {
           <span className="text-zinc-500"><strong className="text-zinc-900 dark:text-zinc-100">{followersCount}</strong> フォロワー</span>
           <span className="text-zinc-500"><strong className="text-zinc-900 dark:text-zinc-100">{followingCount}</strong> フォロー中</span>
         </div>
+        {memberCount !== null && (
+          <div className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-sm font-semibold">
+            👥 会員登録数: {memberCount.toLocaleString()} 人
+          </div>
+        )}
       </section>
 
       {/* Follow list */}
