@@ -64,33 +64,54 @@ export default function HomePage() {
     if (tab === "mine" && !user) return;
     setLoading(true);
 
-    supabase.rpc("get_home_apps", {
-      p_sort: sort,
-      p_tab: tab,
-      p_user_id: user?.id ?? null,
-      p_search: search,
-    }).then(({ data }) => {
-      let appsData: App[] = (data as App[]) ?? [];
+    const fetchApps = async () => {
+      try {
+        const { data, error } = await supabase.rpc("get_home_apps", {
+          p_sort: sort,
+          p_tab: tab,
+          p_user_id: user?.id ?? null,
+          p_search: search,
+        });
 
-      appsData = appsData.map((a: App & { username?: string; badge?: string | null }) => ({
-        ...a,
-        aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
-      }));
+        if (error || !data) throw new Error("rpc failed");
 
-      if (selectedPlatforms.length > 0) {
-        appsData = appsData.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
+        type RpcRow = App & { username?: string; badge?: string | null };
+        let appsData: App[] = (data as RpcRow[]).map((a) => ({
+          ...a,
+          aa_profiles: a.username ? { username: a.username, badge: a.badge ?? null } : null,
+        }));
+
+        if (selectedPlatforms.length > 0)
+          appsData = appsData.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
+        if (selectedCategories.length > 0)
+          appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
+        if (tab !== "mine") {
+          const boostScore = (a: App) =>
+            a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
+          appsData.sort((a, b) => boostScore(b) - boostScore(a));
+        }
+        setApps(appsData);
+      } catch {
+        // フォールバック: 直接クエリ
+        let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false }).limit(100);
+        if (tab === "mine" && user) query = query.eq("user_id", user.id);
+        if (tab === "testers") query = query.gt("tester_slots", 0);
+        const { data: fallbackData } = await query;
+        let appsData = (fallbackData as App[]) ?? [];
+        const userIds = [...new Set(appsData.map((a) => a.user_id))];
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase.from("aa_profiles").select("id, username, badge").in("id", userIds);
+          const profileMap: Record<string, { username: string; badge: string | null }> = {};
+          profiles?.forEach((p: { id: string; username: string; badge: string | null }) => { profileMap[p.id] = p; });
+          appsData = appsData.map((a) => ({ ...a, aa_profiles: profileMap[a.user_id] ?? null }));
+        }
+        setApps(appsData);
+      } finally {
+        setLoading(false);
       }
-      if (selectedCategories.length > 0) {
-        appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
-      }
-      if (tab !== "mine") {
-        const boostScore = (a: App) =>
-          a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
-        appsData.sort((a, b) => boostScore(b) - boostScore(a));
-      }
-      setApps(appsData);
-      setLoading(false);
-    });
+    };
+
+    fetchApps();
   }, [sort, search, selectedPlatforms, selectedCategories, tab, user]);
 
   useEffect(() => { setDisplayCount(18); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
