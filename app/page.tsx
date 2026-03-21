@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
-import { PLATFORM_TAGS, CATEGORY_TAGS, SPECIAL_TAGS } from "@/lib/tags";
+import { PLATFORM_TAGS, CATEGORY_TAGS } from "@/lib/tags";
 import Badge, { isPremiumBadge } from "@/components/Badge";
 import type { BadgeType } from "@/components/Badge";
 import type { User } from "@supabase/supabase-js";
@@ -19,6 +19,7 @@ type App = {
   created_at: string;
   user_id: string;
   status: string | null;
+  tester_slots: number;
   aa_profiles: { username: string; badge: string | null } | null;
   isBoosted?: boolean;
 };
@@ -32,9 +33,13 @@ export default function HomePage() {
   const [apps, setApps] = useState<App[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sort, setSort] = useState("created_at");
-  const [tab, setTab] = useState<"all" | "mine">("all");
+  const [tab, setTab] = useState<"all" | "testers" | "search" | "mine">("all");
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [platformOpen, setPlatformOpen] = useState(false);
+  const [categoryOpen, setCategoryOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [displayCount, setDisplayCount] = useState(18);
   const [platinumCount, setPlatinumCount] = useState<number | null>(null);
@@ -53,15 +58,17 @@ export default function HomePage() {
       .then(({ count }) => setPlatinumCount(count ?? 0));
   }, []);
 
+  const selectedTags = [...selectedPlatforms, ...selectedCategories];
+
   useEffect(() => {
     setLoading(true);
     let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false });
     if (tab === "mine" && user) query = query.eq("user_id", user.id);
+    if (tab === "testers") query = query.gt("tester_slots", 0);
 
     query.then(async ({ data }) => {
       let appsData = (data as App[]) ?? [];
 
-      // プロフィールとブーストを並列取得
       const userIds = [...new Set(appsData.map((a) => a.user_id))];
       const [profilesRes, boostsRes] = await Promise.all([
         userIds.length > 0
@@ -89,10 +96,13 @@ export default function HomePage() {
           (a) => a.name.toLowerCase().includes(q) || a.tagline.toLowerCase().includes(q)
         );
       }
-      if (selectedTags.length > 0) {
-        filtered = filtered.filter((a) => selectedTags.every((t) => a.tags?.includes(t)));
+      if (selectedPlatforms.length > 0) {
+        filtered = filtered.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
       }
-      if (tab === "all") {
+      if (selectedCategories.length > 0) {
+        filtered = filtered.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
+      }
+      if (tab === "all" || tab === "testers") {
         const boostScore = (a: App) =>
           a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
         filtered.sort((a, b) => boostScore(b) - boostScore(a));
@@ -100,14 +110,14 @@ export default function HomePage() {
       setApps(filtered);
       setLoading(false);
     });
-  }, [sort, search, selectedTags, tab, user]);
+  }, [sort, search, selectedPlatforms, selectedCategories, tab, user]);
 
-  useEffect(() => { setDisplayCount(18); }, [sort, search, selectedTags, tab]);
+  useEffect(() => { setDisplayCount(18); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
 
-  const toggleTag = (tag: string) =>
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
+  const togglePlatform = (tag: string) =>
+    setSelectedPlatforms((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+  const toggleCategory = (tag: string) =>
+    setSelectedCategories((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
@@ -144,82 +154,96 @@ export default function HomePage() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-6">
+      <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 mb-4">
+        {(["all", "testers"] as const).map((t) => (
+          <button key={t} onClick={() => { setTab(t); setSearchOpen(false); }}
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${tab === t ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
+            {t === "all" ? "すべて" : "🧪 テスター募集"}
+          </button>
+        ))}
         <button
-          onClick={() => setTab("all")}
-          className={`px-4 py-2.5 text-sm font-medium transition-colors ${tab === "all" ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}
-        >
-          すべて
+          onClick={() => { setSearchOpen((v) => !v); setTab("all"); }}
+          className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${searchOpen ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
+          🔍 検索
         </button>
         {user && (
-          <button
-            onClick={() => setTab("mine")}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors ${tab === "mine" ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}
-          >
+          <button onClick={() => { setTab("mine"); setSearchOpen(false); }}
+            className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ml-auto ${tab === "mine" ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
             マイアプリ
           </button>
         )}
       </div>
 
-      {/* Search + Sort */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="アプリを検索..."
-          className="flex-1 px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
-        />
-        <div className="flex gap-2">
+      {/* 検索バー（展開時のみ） */}
+      {searchOpen && (
+        <div className="mb-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="アプリ名・説明を検索..."
+            autoFocus
+            className="w-full px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+          />
+        </div>
+      )}
+
+      {/* フィルター + ソート */}
+      <div className="flex items-center gap-2 mb-6 flex-wrap">
+        {/* プラットフォームドロップダウン */}
+        <div className="relative">
+          <button onClick={() => { setPlatformOpen((v) => !v); setCategoryOpen(false); }}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedPlatforms.length > 0 ? "border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
+            プラットフォーム {selectedPlatforms.length > 0 && `(${selectedPlatforms.length})`}
+            <span className="text-xs">{platformOpen ? "▲" : "▼"}</span>
+          </button>
+          {platformOpen && (
+            <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg p-3 flex flex-wrap gap-1.5 w-64">
+              {PLATFORM_TAGS.map((tag) => (
+                <button key={tag} onClick={() => togglePlatform(tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedPlatforms.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* カテゴリドロップダウン */}
+        <div className="relative">
+          <button onClick={() => { setCategoryOpen((v) => !v); setPlatformOpen(false); }}
+            className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm border transition-colors ${selectedCategories.length > 0 ? "border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
+            カテゴリ {selectedCategories.length > 0 && `(${selectedCategories.length})`}
+            <span className="text-xs">{categoryOpen ? "▲" : "▼"}</span>
+          </button>
+          {categoryOpen && (
+            <div className="absolute top-full left-0 mt-1 z-20 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-xl shadow-lg p-3 flex flex-wrap gap-1.5 w-72">
+              {CATEGORY_TAGS.map((tag) => (
+                <button key={tag} onClick={() => toggleCategory(tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedCategories.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
+                  {tag}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {selectedTags.length > 0 && (
+          <button onClick={() => { setSelectedPlatforms([]); setSelectedCategories([]); }}
+            className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 underline">
+            クリア（{selectedTags.length}）
+          </button>
+        )}
+
+        {/* ソート */}
+        <div className="flex gap-1.5 ml-auto">
           {SORT_OPTIONS.map((opt) => (
             <button key={opt.value} onClick={() => setSort(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${sort === opt.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${sort === opt.value ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-50 dark:hover:bg-zinc-800"}`}>
               {opt.label}
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Tag filters */}
-      <div className="mb-8 space-y-3">
-        <div className="flex flex-wrap items-start gap-2">
-          <span className="text-xs text-zinc-400 w-20 flex-shrink-0 pt-1">特別</span>
-          <div className="flex flex-wrap gap-1.5">
-            {SPECIAL_TAGS.map((tag) => (
-              <button key={tag} onClick={() => toggleTag(tag)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTags.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <span className="text-xs text-zinc-400 w-20 flex-shrink-0 pt-1">プラットフォーム</span>
-          <div className="flex flex-wrap gap-1.5">
-            {PLATFORM_TAGS.map((tag) => (
-              <button key={tag} onClick={() => toggleTag(tag)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTags.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="flex flex-wrap items-start gap-2">
-          <span className="text-xs text-zinc-400 w-20 flex-shrink-0 pt-1">カテゴリ</span>
-          <div className="flex flex-wrap gap-1.5">
-            {CATEGORY_TAGS.map((tag) => (
-              <button key={tag} onClick={() => toggleTag(tag)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${selectedTags.includes(tag) ? "bg-zinc-900 dark:bg-white text-white dark:text-zinc-900" : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"}`}>
-                {tag}
-              </button>
-            ))}
-          </div>
-        </div>
-        {selectedTags.length > 0 && (
-          <button onClick={() => setSelectedTags([])} className="text-xs text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 underline">
-            フィルターをクリア（{selectedTags.length}個選択中）
-          </button>
-        )}
       </div>
 
       {/* Grid */}
@@ -232,7 +256,7 @@ export default function HomePage() {
       ) : apps.length === 0 ? (
         <div className="text-center py-20 text-zinc-400">
           <p className="text-lg mb-4">
-            {tab === "mine" ? "まだアプリを投稿していません" : search || selectedTags.length > 0 ? "該当するアプリが見つかりません" : "まだアプリが投稿されていません"}
+            {tab === "mine" ? "まだアプリを投稿していません" : tab === "testers" ? "テスター募集中のアプリはありません" : search || selectedTags.length > 0 ? "該当するアプリが見つかりません" : "まだアプリが投稿されていません"}
           </p>
           <Link href="/submit" className="px-5 py-2.5 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity text-sm">
             {tab === "mine" ? "最初のアプリを投稿する" : "アプリを投稿する"}
