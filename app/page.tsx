@@ -8,9 +8,9 @@ export const dynamic = "force-dynamic";
 type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function withTimeout(promise: Promise<any>, ms: number): Promise<any> {
+async function withTimeout(promise: PromiseLike<any>, ms: number): Promise<any> {
   const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), ms));
-  return Promise.race([promise, timeout]);
+  return Promise.race([Promise.resolve(promise), timeout]);
 }
 
 export default async function HomePage() {
