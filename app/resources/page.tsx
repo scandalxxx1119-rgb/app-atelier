@@ -32,14 +32,16 @@ export default function ResourcesPage() {
             { label: "ポイント制度", icon: "⭐", href: "/points" },
           ].map((f) =>
             f.href ? (
-              <Link key={f.label} href={f.href} className="bg-white/10 hover:bg-white/20 rounded-lg p-3 text-center transition-colors">
+              <Link key={f.label} href={f.href} className="bg-white/10 hover:bg-white/30 active:bg-white/40 rounded-lg p-3 text-center transition-colors border border-white/20 hover:border-white/50 group">
                 <div className="text-2xl mb-1">{f.icon}</div>
                 <div className="text-xs font-medium">{f.label}</div>
+                <div className="text-[10px] text-white/50 group-hover:text-white/80 mt-1 transition-colors">→ 詳しく見る</div>
               </Link>
             ) : (
-              <div key={f.label} className="bg-white/10 rounded-lg p-3 text-center">
+              <div key={f.label} className="bg-white/10 rounded-lg p-3 text-center border border-white/10">
                 <div className="text-2xl mb-1">{f.icon}</div>
                 <div className="text-xs font-medium">{f.label}</div>
+                <div className="text-[10px] text-white/30 mt-1">準備中</div>
               </div>
             )
           )}
@@ -47,9 +49,6 @@ export default function ResourcesPage() {
         <div className="mt-4 flex gap-3">
           <Link href="/" className="text-sm font-semibold text-white underline underline-offset-2">
             サービスを見る →
-          </Link>
-          <Link href="/points" className="text-sm font-semibold text-white underline underline-offset-2">
-            ポイント制度 →
           </Link>
         </div>
       </section>
