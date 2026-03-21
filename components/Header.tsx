@@ -37,14 +37,13 @@ export default function Header() {
   return (
     <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <Link href="/" className="font-bold text-lg tracking-tight">
-          App Atelier
-        </Link>
         <nav className="flex items-center gap-2 text-sm">
+          <ThemeToggle />
           <Link href="/resources" className="px-3 py-1.5 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">
             About
           </Link>
-          <ThemeToggle />
+        </nav>
+        <nav className="flex items-center gap-2 text-sm">
           {user ? (
             <>
               <Link
