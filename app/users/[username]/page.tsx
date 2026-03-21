@@ -28,6 +28,7 @@ type App = {
   likes_count: number;
   status: string | null;
 };
+type FollowUser = { id: string; username: string; avatar_url: string | null; badge: string | null };
 
 export default function UserProfilePage() {
   const { username } = useParams<{ username: string }>();
@@ -39,6 +40,9 @@ export default function UserProfilePage() {
   const [isFollowing, setIsFollowing] = useState(false);
   const [followersCount, setFollowersCount] = useState(0);
   const [followingCount, setFollowingCount] = useState(0);
+  const [followers, setFollowers] = useState<FollowUser[]>([]);
+  const [followingList, setFollowingList] = useState<FollowUser[]>([]);
+  const [followTab, setFollowTab] = useState<"followers" | "following">("followers");
   const [followLoading, setFollowLoading] = useState(false);
 
   useEffect(() => {
@@ -73,6 +77,26 @@ export default function UserProfilePage() {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUser(data.user ?? null));
   }, []);
+
+  useEffect(() => {
+    if (!profile) return;
+    // フォロワーリスト取得
+    supabase.from("aa_follows").select("follower_id").eq("following_id", profile.id)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        supabase.from("aa_profiles").select("id, username, avatar_url, badge")
+          .in("id", data.map((f: { follower_id: string }) => f.follower_id))
+          .then(({ data: profiles }) => { if (profiles) setFollowers(profiles as FollowUser[]); });
+      });
+    // フォロー中リスト取得
+    supabase.from("aa_follows").select("following_id").eq("follower_id", profile.id)
+      .then(({ data }) => {
+        if (!data || data.length === 0) return;
+        supabase.from("aa_profiles").select("id, username, avatar_url, badge")
+          .in("id", data.map((f: { following_id: string }) => f.following_id))
+          .then(({ data: profiles }) => { if (profiles) setFollowingList(profiles as FollowUser[]); });
+      });
+  }, [profile]);
 
   useEffect(() => {
     if (!currentUser || !profile || currentUser.id === profile.id) return;
@@ -173,6 +197,41 @@ export default function UserProfilePage() {
           </button>
         )}
       </div>
+
+      {/* フォロー/フォロワーリスト */}
+      {(followersCount > 0 || followingCount > 0) && (
+        <div className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-4 mb-4 border-b border-zinc-100 dark:border-zinc-800 pb-3">
+            <button onClick={() => setFollowTab("followers")}
+              className={`text-sm font-medium transition-colors ${followTab === "followers" ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
+              フォロワー {followersCount}
+            </button>
+            <button onClick={() => setFollowTab("following")}
+              className={`text-sm font-medium transition-colors ${followTab === "following" ? "text-zinc-900 dark:text-zinc-100" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
+              フォロー中 {followingCount}
+            </button>
+          </div>
+          <div className="space-y-1">
+            {(followTab === "followers" ? followers : followingList).map((u) => (
+              <Link key={u.id} href={`/users/${u.username}`}
+                className="flex items-center gap-3 p-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 flex-shrink-0">
+                  {u.avatar_url
+                    ? <img src={u.avatar_url} alt={u.username} className="w-full h-full object-cover" />
+                    : u.username[0].toUpperCase()}
+                </div>
+                <span className="text-sm font-medium flex-1">{u.username}</span>
+                {u.badge && <Badge badge={u.badge as "master" | "platinum" | "gold" | "silver" | "bronze"} size="xs" />}
+              </Link>
+            ))}
+            {(followTab === "followers" ? followers : followingList).length === 0 && (
+              <p className="text-sm text-zinc-400 py-2">
+                {followTab === "followers" ? "フォロワーはまだいません" : "フォローしているユーザーはいません"}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="space-y-3">
         {apps.map((app) => (
