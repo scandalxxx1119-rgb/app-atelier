@@ -183,6 +183,10 @@
 - **実装:** `app/apps/[id]/opengraph-image.tsx`
 - Supabaseからアプリの`icon_url`・`name`・`tagline`を取得して表示
 - **注意:** edge runtimeでは`Buffer`が使えないため、画像は`fetch`→`ArrayBuffer`→`btoa`ループでbase64変換すること（spreadは大きい画像でスタックオーバーフローするのでNG）
+- **やらかし記録（2026-03-21）:**
+  1. 最初に`Buffer.from(buf).toString("base64")`を使ったがedge runtimeで動かなかった
+  2. `btoa(String.fromCharCode(...new Uint8Array(buf)))`のspread版も大きい画像でNG
+  3. 正解: `for`ループで1文字ずつ`String.fromCharCode`して`btoa`に渡す
 
 ---
 
