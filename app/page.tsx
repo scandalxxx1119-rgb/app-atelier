@@ -53,7 +53,7 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    supabase.from("aa_profiles").select("id", { count: "exact", head: true })
+    supabase.from("aa_profiles").select("id", { count: "exact" })
       .eq("badge", "platinum")
       .then(({ count }) => setPlatinumCount(count ?? 0));
   }, []);
@@ -61,10 +61,14 @@ export default function HomePage() {
   const selectedTags = [...selectedPlatforms, ...selectedCategories];
 
   useEffect(() => {
+    // mineタブはユーザー確定後のみ実行
+    if (tab === "mine" && !user) return;
     setLoading(true);
-    let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false });
+
+    let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false }).limit(100);
     if (tab === "mine" && user) query = query.eq("user_id", user.id);
     if (tab === "testers") query = query.gt("tester_slots", 0);
+    if (search) query = (query as typeof query).ilike("name", `%${search}%`);
 
     query.then(async ({ data }) => {
       let appsData = (data as App[]) ?? [];
@@ -90,19 +94,13 @@ export default function HomePage() {
       }));
 
       let filtered = appsData;
-      if (search) {
-        const q = search.toLowerCase();
-        filtered = filtered.filter(
-          (a) => a.name.toLowerCase().includes(q) || a.tagline.toLowerCase().includes(q)
-        );
-      }
       if (selectedPlatforms.length > 0) {
         filtered = filtered.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
       }
       if (selectedCategories.length > 0) {
         filtered = filtered.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
       }
-      if (tab === "all" || tab === "testers") {
+      if (tab !== "mine") {
         const boostScore = (a: App) =>
           a.isBoosted ? 2 : isPremiumBadge(a.aa_profiles?.badge as BadgeType) ? 1 : 0;
         filtered.sort((a, b) => boostScore(b) - boostScore(a));
