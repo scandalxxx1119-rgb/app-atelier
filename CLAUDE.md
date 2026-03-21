@@ -172,6 +172,20 @@
 
 ---
 
+## OGP画像設定
+
+### トップページ（`/`）
+- **実装:** `app/opengraph-image.tsx`
+- 紫グラデーション背景＋🎨アイコン＋"App Atelier"テキスト
+- サイズ: 1200×630px、edge runtime
+
+### アプリ詳細ページ（`/apps/[id]`）
+- **実装:** `app/apps/[id]/opengraph-image.tsx`
+- Supabaseからアプリの`icon_url`・`name`・`tagline`を取得して表示
+- **注意:** edge runtimeでは`Buffer`が使えないため、画像は`fetch`→`ArrayBuffer`→`btoa`ループでbase64変換すること（spreadは大きい画像でスタックオーバーフローするのでNG）
+
+---
+
 ## 未実装・今後のTODO
 - ヘッダーのモバイル対応（マイページ・マイアプリへのリンク不足）
 - iOS App Store申請
