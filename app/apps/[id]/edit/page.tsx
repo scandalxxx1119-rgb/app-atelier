@@ -97,7 +97,7 @@ export default function EditAppPage() {
       setStatus(app.status ?? "released");
       setTesterEnabled((app.tester_slots ?? 0) > 0);
       setTesterSlots(app.tester_slots > 0 ? app.tester_slots : 5);
-      setTesterPoints(app.tester_reward_points > 0 ? app.tester_reward_points : 10);
+      setTesterPoints(app.tester_reward_points > 0 ? app.tester_reward_points : 1);
       setIconPreview(app.icon_url ?? "");
       setScreenshotPreviews(app.screenshot_urls ?? []);
       setScreenshotFiles((app.screenshot_urls ?? []).map(() => null));
