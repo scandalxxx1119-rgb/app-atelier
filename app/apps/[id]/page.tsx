@@ -272,7 +272,7 @@ export default function AppDetailPage() {
     }
     setBoosting(true);
     const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-    await supabase.from("aa_boosts").insert({ app_id: app.id, user_id: user.id, type: "featured", expires_at: expiresAt });
+    await supabase.from("aa_boosts").insert({ app_id: app.id, user_id: user.id, expires_at: expiresAt });
     await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${app.name}」をブースト`, app_id: app.id });
     setIsBoosted(true);
     setUserPoints((p) => p - BOOST_COST);

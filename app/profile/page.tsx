@@ -164,15 +164,14 @@ export default function ProfilePage() {
   };
 
   const handleBoost = async (appId: string, appName: string) => {
-    if (!user) { alert("未ログイン"); return; }
-    alert(`points=${points}, cost=${BOOST_COST}`);
+    if (!user) return;
     if (points < BOOST_COST) {
       alert(`ブーストには${BOOST_COST}ptが必要です（現在${points}pt）`);
       return;
     }
     setBoostingId(appId);
     const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-    const { error: boostError } = await supabase.from("aa_boosts").insert({ app_id: appId, user_id: user.id, type: "featured", expires_at: expiresAt });
+    const { error: boostError } = await supabase.from("aa_boosts").insert({ app_id: appId, user_id: user.id, expires_at: expiresAt });
     if (boostError) { alert("ブーストエラー: " + boostError.message); setBoostingId(null); return; }
     const { error: pointError } = await supabase.from("aa_points").insert({ user_id: user.id, amount: -BOOST_COST, reason: `「${appName}」をブースト`, app_id: appId });
     if (pointError) { alert("ポイントエラー: " + pointError.message); setBoostingId(null); return; }
