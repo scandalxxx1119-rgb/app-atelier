@@ -82,7 +82,13 @@ export default function TestersPage() {
 
   const updateStatus = async (applicationId: string, status: "approved" | "rejected") => {
     setUpdating(applicationId);
-    await supabase.from("aa_tester_applications").update({ status }).eq("id", applicationId);
+    const { error } = await supabase.from("aa_tester_applications").update({ status }).eq("id", applicationId);
+
+    if (error) {
+      alert("ステータスの更新に失敗しました。時間をおいて再試行してください。");
+      setUpdating(null);
+      return;
+    }
 
     // 承認時のみポイント付与（未承認→承認の場合だけ）
     if (status === "approved" && app && app.tester_reward_points > 0) {
