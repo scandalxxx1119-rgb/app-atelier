@@ -48,6 +48,8 @@ export default function SubmitPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isPremium, setIsPremium] = useState(false);
+  const [userBadge, setUserBadge] = useState<string | null>(null);
+  const [isPaidPlan, setIsPaidPlan] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [agreed, setAgreed] = useState(false);
@@ -84,6 +86,8 @@ export default function SubmitPage() {
       setUser(data.user);
       const { data: profile } = await supabase.from("aa_profiles").select("badge, is_premium, screenshot_extended").eq("id", data.user.id).single();
       setIsPremium(isPremiumBadge(profile?.badge) || profile?.is_premium === true || profile?.screenshot_extended === true);
+      setUserBadge(profile?.badge ?? null);
+      setIsPaidPlan(profile?.is_premium === true);
       setLoading(false);
     });
   }, [router]);
@@ -144,11 +148,20 @@ export default function SubmitPage() {
         }
       }
 
-      // 投稿数上限チェック（20件まで）
+      // 投稿数上限チェック
+      const isHighBadge = userBadge === "platinum" || userBadge === "master";
+      const maxApps = isHighBadge ? 20 : isPaidPlan ? 10 : 2;
+
       const { count } = await supabase.from("aa_apps")
         .select("*", { count: "exact", head: true }).eq("user_id", user.id);
-      if ((count ?? 0) >= 20) {
-        setError("1アカウントあたりの投稿数上限（20件）に達しています");
+      if ((count ?? 0) >= maxApps) {
+        if (isHighBadge) {
+          setError("投稿数上限（20件）に達しています");
+        } else if (isPaidPlan) {
+          setError("投稿数上限（10件）に達しています");
+        } else {
+          setError("無料プランの投稿数上限（2件）に達しています。今後追加予定の有料プランにアップグレードすると最大10件まで投稿できます。");
+        }
         setSubmitting(false);
         return;
       }
