@@ -265,6 +265,24 @@
 
 ---
 
+### `/board` 意見掲示板
+- **実装:** `app/board/page.tsx`（スレッド一覧）、`app/board/[postId]/page.tsx`（スレッド詳細）
+- 「こんなアプリが欲しい」スレッドを立てられる
+- 開発者がレスできる（返信フォーム）
+- 自分の投稿・返信のみ削除可
+- テーブル: `aa_board_posts`（title/content）、`aa_board_replies`（post_id/content）
+- ヘッダーに「掲示板」リンク追加
+
+### ログインボーナス
+- **実装:** `components/LoginBonus.tsx` → `components/Providers.tsx` に組み込み
+- 毎日初回アクセス時に10pt付与（`check_login_bonus` RPC）
+- 連続ログイン日数を記録（`aa_login_streaks` テーブル）
+- マイルストーンボーナス: 3/5/10/30/50/100日→+30pt、以降50日おきに+30pt
+- 特別ボーナス: 365/730/1095日→+300pt
+- ログイン時に画面下部にトースト通知表示
+
+---
+
 ## 未実装・今後のTODO
 - **メール通知:** いいね・コメント・テスター承認時にSupabase Edge Functions + Resendで送信（月3,000通無料）
 - **X自動ツイート:** Vercel Cron + X API v2（Developer申請フラグ待ち）
