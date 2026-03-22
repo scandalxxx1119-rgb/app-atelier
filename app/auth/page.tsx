@@ -67,8 +67,7 @@ export default function AuthPage() {
               reason: "新規登録ボーナス",
             });
           }
-          router.push("/");
-          router.refresh();
+          router.push("/welcome");
         } else {
           // メール確認が必要な場合
           setDone(true);

@@ -50,6 +50,7 @@ export default function HomeClient({
   const BOOST_COST = 50;
   const [weeklyTop, setWeeklyTop] = useState<SimpleApp[]>([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState<SimpleApp[]>([]);
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
   // サーバーデータがある場合のみ初回フェッチをスキップ
   const isInitialRender = useRef(initialApps.length > 0);
 
@@ -139,6 +140,9 @@ export default function HomeClient({
       .then(({ data }) => {
         const total = (data ?? []).reduce((sum: number, r: { amount: number }) => sum + r.amount, 0);
         setUserPoints(total);
+        // 登録ボーナスのみ（≤10pt）かつ未dismissならウェルカムバナー表示
+        const dismissed = typeof window !== "undefined" && localStorage.getItem("welcome_banner_dismissed");
+        if (!dismissed && total <= 10) setShowWelcomeBanner(true);
       });
   }, [user]);
 
@@ -179,6 +183,32 @@ export default function HomeClient({
         <h1 className="text-3xl font-bold mb-2">App Atelier</h1>
         <p className="text-zinc-500 dark:text-zinc-400">個人開発者が作ったアプリを発見・応援しよう</p>
       </div>
+
+      {/* ウェルカムバナー（新規ユーザー向け） */}
+      {showWelcomeBanner && (
+        <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-violet-50 to-indigo-50 dark:from-violet-950 dark:to-indigo-950 border border-violet-200 dark:border-violet-800 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-violet-700 dark:text-violet-300 mb-1">👋 App Atelierへようこそ！</p>
+            <p className="text-xs text-violet-600 dark:text-violet-400 mb-3">気になるアプリに <strong>いいね</strong> してみましょう。+1pt もらえます。</p>
+            <div className="flex gap-2 flex-wrap">
+              <a href="/testers" className="text-xs px-3 py-1.5 rounded-full bg-violet-600 text-white font-medium hover:bg-violet-700 transition-colors">
+                🧪 テスターになってptを稼ぐ
+              </a>
+              <a href="/submit" className="text-xs px-3 py-1.5 rounded-full border border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-300 font-medium hover:bg-violet-50 dark:hover:bg-violet-900 transition-colors">
+                🚀 アプリを投稿する
+              </a>
+              <a href="/points" className="text-xs px-3 py-1.5 rounded-full border border-violet-300 dark:border-violet-700 text-violet-600 dark:text-violet-300 font-medium hover:bg-violet-50 dark:hover:bg-violet-900 transition-colors">
+                💡 ポイントの使い方
+              </a>
+            </div>
+          </div>
+          <button
+            onClick={() => { localStorage.setItem("welcome_banner_dismissed", "1"); setShowWelcomeBanner(false); }}
+            className="text-violet-400 hover:text-violet-600 dark:hover:text-violet-200 text-lg flex-shrink-0"
+            aria-label="閉じる"
+          >×</button>
+        </div>
+      )}
 
       {/* 注目アプリ（ブースト中） */}
       {tab === "all" && apps.some((a) => a.isBoosted) && (

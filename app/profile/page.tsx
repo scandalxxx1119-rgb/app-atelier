@@ -54,13 +54,15 @@ export default function ProfilePage() {
   const [newEmail, setNewEmail] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
+  const [hasLiked, setHasLiked] = useState(false);
+  const [hasAppliedTester, setHasAppliedTester] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
 
-      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes] = await Promise.all([
+      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes, likesRes, testerAppRes] = await Promise.all([
         supabase.from("aa_profiles")
           .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
@@ -80,6 +82,8 @@ export default function ProfilePage() {
           .gte("amount", 2),
         supabase.from("aa_follows").select("id", { count: "exact" }).eq("following_id", data.user.id),
         supabase.from("aa_follows").select("id", { count: "exact" }).eq("follower_id", data.user.id),
+        supabase.from("aa_likes").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
+        supabase.from("aa_tester_applications").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
@@ -102,6 +106,8 @@ export default function ProfilePage() {
       setTesterScore((testerRes.count ?? 0) + (highRatingRes.count ?? 0));
       setFollowersCount(followersRes.count ?? 0);
       setFollowingCount(followingRes.count ?? 0);
+      setHasLiked((likesRes.count ?? 0) > 0);
+      setHasAppliedTester((testerAppRes.count ?? 0) > 0);
 
       if (profileRes.data?.badge === "master") {
         supabase.from("aa_profiles").select("*", { count: "exact", head: true })
@@ -264,6 +270,48 @@ export default function ProfilePage() {
           {theme === "dark" ? "☀️" : "🌙"}
         </button>
       </div>
+
+      {/* やることリスト（全タスク完了で非表示） */}
+      {(() => {
+        const tasks = [
+          { done: !!avatarUrl, label: "プロフィール写真を設定する", href: undefined },
+          { done: hasLiked, label: "アプリにいいねする（+1pt）", href: "/" },
+          { done: hasAppliedTester, label: "テスターに申請する", href: "/testers" },
+          { done: apps.length > 0, label: "アプリを投稿する", href: "/submit" },
+        ];
+        const doneCount = tasks.filter((t) => t.done).length;
+        if (doneCount === tasks.length) return null;
+        return (
+          <section className="mb-6 p-5 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">はじめてのガイド</p>
+              <span className="text-xs text-violet-500">{doneCount} / {tasks.length} 完了</span>
+            </div>
+            <div className="w-full bg-violet-200 dark:bg-violet-900 rounded-full h-1.5 mb-4">
+              <div
+                className="bg-violet-500 h-1.5 rounded-full transition-all"
+                style={{ width: `${(doneCount / tasks.length) * 100}%` }}
+              />
+            </div>
+            <ul className="space-y-2">
+              {tasks.map((task) => (
+                <li key={task.label} className="flex items-center gap-2">
+                  <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] ${task.done ? "border-violet-500 bg-violet-500 text-white" : "border-violet-300 dark:border-violet-700"}`}>
+                    {task.done ? "✓" : ""}
+                  </span>
+                  {task.done ? (
+                    <span className="text-xs text-zinc-400 line-through">{task.label}</span>
+                  ) : task.href ? (
+                    <Link href={task.href} className="text-xs text-violet-600 dark:text-violet-400 hover:underline">{task.label}</Link>
+                  ) : (
+                    <span className="text-xs text-violet-600 dark:text-violet-400">{task.label}</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        );
+      })()}
 
       {/* Profile */}
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 space-y-5">
