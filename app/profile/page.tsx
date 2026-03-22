@@ -178,6 +178,22 @@ export default function ProfilePage() {
       alert("そのユーザー名は使用できません");
       return;
     }
+    if (username.trim().length > 30) {
+      alert("ユーザー名は30文字以内にしてください");
+      return;
+    }
+    if (bio.trim().length > 200) {
+      alert("自己紹介は200文字以内にしてください");
+      return;
+    }
+    // SNS URLはhttp(s)のみ許可
+    const urlFields = [twitterUrl.trim(), githubUrl.trim(), websiteUrl.trim()];
+    for (const u of urlFields) {
+      if (u && !u.startsWith("http://") && !u.startsWith("https://")) {
+        alert("URLはhttp://またはhttps://から始まる形式で入力してください");
+        return;
+      }
+    }
     setSaving(true);
     const now = canChangeUsername() && username.trim() ? new Date().toISOString() : usernameUpdatedAt;
     await supabase.from("aa_profiles").upsert({

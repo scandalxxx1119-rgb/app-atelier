@@ -118,12 +118,13 @@ export default function AppDetailPage() {
         supabase.from("aa_profiles").select("id, username, badge, avatar_url")
           .eq("id", data.user_id).single()
           .then(({ data: p }) => { if (p) setDeveloper(p as Profile); });
-        // 関連アプリ（同じタグを持つアプリ）
+        // 関連アプリ（同じタグを持つアプリ、非表示除く）
         if (data.tags && data.tags.length > 0) {
           supabase.from("aa_apps")
             .select("id, name, tagline, icon_url, likes_count")
             .overlaps("tags", data.tags)
             .neq("id", id)
+            .eq("is_hidden", false)
             .order("likes_count", { ascending: false })
             .limit(4)
             .then(({ data: related }) => { if (related) setRelatedApps(related as RelatedApp[]); });
@@ -203,6 +204,10 @@ export default function AppDetailPage() {
   const handleComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !comment.trim()) return;
+    if (comment.trim().length > 500) {
+      alert("コメントは500文字以内で入力してください");
+      return;
+    }
     setSubmitting(true);
 
     // 1分以内の連投チェック
@@ -247,6 +252,14 @@ export default function AppDetailPage() {
   const handlePostUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !updateTitle.trim()) return;
+    if (updateTitle.trim().length > 100) {
+      alert("タイトルは100文字以内にしてください");
+      return;
+    }
+    if (updateContent.trim().length > 2000) {
+      alert("内容は2000文字以内にしてください");
+      return;
+    }
     setPostingUpdate(true);
     const { data } = await supabase.from("aa_app_updates").insert({
       app_id: id,
@@ -285,12 +298,20 @@ export default function AppDetailPage() {
   const handleRewardComment = async (commentUserId: string, commentId: string, amount: number) => {
     if (!user || !app) return;
     setRewardingComment(commentId);
-    await supabase.from("aa_points").insert({
-      user_id: commentUserId,
-      amount,
-      reason: `「${app.name}」へのコメント報酬`,
-      app_id: app.id,
-    });
+    // DB側で既払いチェック（ページリロードによる多重付与を防止）
+    const { count } = await supabase.from("aa_points")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", commentUserId)
+      .eq("app_id", app.id)
+      .eq("reason", `「${app.name}」へのコメント報酬`);
+    if ((count ?? 0) === 0) {
+      await supabase.from("aa_points").insert({
+        user_id: commentUserId,
+        amount,
+        reason: `「${app.name}」へのコメント報酬`,
+        app_id: app.id,
+      });
+    }
     setRewardedComments((prev) => new Set([...prev, commentId]));
     setRewardingComment(null);
   };
@@ -348,6 +369,16 @@ export default function AppDetailPage() {
   const handleReport = async () => {
     if (!user || !reportReason.trim()) return;
     setReporting(true);
+    // 同一ユーザーによる重複通報を防止（自動削除トリガーの悪用対策）
+    const { count: existingReports } = await supabase.from("aa_reports")
+      .select("*", { count: "exact", head: true })
+      .eq("app_id", app.id).eq("reporter_id", user.id);
+    if ((existingReports ?? 0) > 0) {
+      setReporting(false);
+      setReportDone(true);
+      setReportReason("");
+      return;
+    }
     await supabase.from("aa_reports").insert({
       app_id: app.id, reporter_id: user.id, reason: reportReason.trim(),
     });

@@ -228,7 +228,7 @@ export default function EditAppPage() {
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">説明</label>
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className={`${inputCls} resize-none`} />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={3000} className={`${inputCls} resize-none`} />
           </div>
         </div>
 
