@@ -264,7 +264,10 @@
 ## 未実装・今後のTODO
 - **メール通知:** いいね・コメント・テスター承認時にSupabase Edge Functions + Resendで送信（月3,000通無料）
 - **X自動ツイート:** Vercel Cron + X API v2（Developer申請フラグ待ち）
-- **独自ドメイン取得:** 4月予定（app-atelier.com等、Vercelで購入予定）
+- **独自ドメイン取得:** 4月予定（Vercelで購入予定）
+- **【App Store審査対策①】プッシュ通知実装:** Expo Notifications + Supabase Edge Functions（いいね・コメント・テスター承認時）
+- **【App Store審査対策③】審査申請メモ欄の文言準備:** コード不要・申請時にモデレーション体制を説明する文章を用意する
+- **【App Store審査対策④】ユーザーブロック機能:** aa_blocksテーブル追加 + ブロックしたユーザーのコンテンツ非表示UI
 - iOS App Store申請
 - Google Play本番申請
 - マネタイズ（ポイント購入導線、月額サブスク、スポンサー枠）
