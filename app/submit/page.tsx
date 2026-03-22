@@ -126,6 +126,23 @@ export default function SubmitPage() {
     setSubmitting(true);
 
     try {
+      // URLフィールドのバリデーション
+      const urlFields: [string, string][] = [
+        [url, "WebサイトURL"],
+        [appStoreUrl, "App Store URL"],
+        [playStoreUrl, "Google Play URL"],
+        [githubUrl, "GitHub URL"],
+        [twitterUrl, "X (Twitter) URL"],
+        [youtubeUrl, "YouTube URL"],
+      ];
+      for (const [val, label] of urlFields) {
+        if (val && !val.startsWith("http://") && !val.startsWith("https://")) {
+          setError(`${label}はhttps://から始まるURLを入力してください`);
+          setSubmitting(false);
+          return;
+        }
+      }
+
       // 投稿数上限チェック（20件まで）
       const { count } = await supabase.from("aa_apps")
         .select("*", { count: "exact", head: true }).eq("user_id", user.id);
