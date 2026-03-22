@@ -67,6 +67,7 @@ export default function HomeClient({
     supabase.from("aa_apps")
       .select("id, name, tagline, icon_url, likes_count")
       .gte("created_at", monthAgo)
+      .eq("is_hidden", false)
       .order("likes_count", { ascending: false })
       .limit(3)
       .then(({ data }) => { if (data && data.length > 0) setWeeklyTop(data as SimpleApp[]); });
@@ -84,6 +85,7 @@ export default function HomeClient({
         supabase.from("aa_apps")
           .select("id, name, tagline, icon_url, likes_count")
           .in("id", appIds)
+          .eq("is_hidden", false)
           .then(({ data: apps }) => { if (apps) setRecentlyUpdated(apps as SimpleApp[]); });
       });
   }, []);
@@ -116,7 +118,7 @@ export default function HomeClient({
           appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
         setApps(appsData);
       } catch {
-        let query = supabase.from("aa_apps").select("*").order(sort, { ascending: false }).limit(100);
+        let query = supabase.from("aa_apps").select("*").eq("is_hidden", false).order(sort, { ascending: false }).limit(100);
         if (tab === "mine" && user) query = query.eq("user_id", user.id);
         if (tab === "testers") query = query.gt("tester_slots", 0);
         const { data: fallbackData } = await query;

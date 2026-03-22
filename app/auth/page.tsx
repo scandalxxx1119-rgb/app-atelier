@@ -32,6 +32,14 @@ export default function AuthPage() {
       }
 
       if (mode === "signup") {
+        // 予約語チェック
+        const RESERVED = ["admin", "master", "administrator", "root", "support", "official", "appatelier", "app_atelier", "system", "moderator", "mod", "staff", "help"];
+        const trimmedUsername = (username.trim() || email.split("@")[0]).toLowerCase();
+        if (RESERVED.includes(trimmedUsername)) {
+          setError("そのユーザー名は使用できません");
+          setLoading(false);
+          return;
+        }
         const { data, error } = await supabase.auth.signUp({
           email,
           password,

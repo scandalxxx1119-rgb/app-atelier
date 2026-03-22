@@ -54,7 +54,7 @@ export default function UserProfilePage() {
         const [appsRes, testerRes, highRatingRes, followersRes, followingRes] = await Promise.all([
           supabase.from("aa_apps")
             .select("id, name, tagline, icon_url, tags, likes_count, status")
-            .eq("user_id", data.id).order("created_at", { ascending: false }),
+            .eq("user_id", data.id).eq("is_hidden", false).order("created_at", { ascending: false }),
           supabase.from("aa_tester_applications")
             .select("id", { count: "exact" })
             .eq("user_id", data.id).eq("status", "approved"),
