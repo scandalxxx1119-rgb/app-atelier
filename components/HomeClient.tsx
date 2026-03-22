@@ -421,9 +421,11 @@ export default function HomeClient({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
-                      <span>♥</span><span>{app.likes_count}</span>
-                    </div>
+                    {app.likes_count > 0 && (
+                      <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                        <span>♥</span><span>{app.likes_count}</span>
+                      </div>
+                    )}
                   </div>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
                   {app.likes_count === 0 && (
