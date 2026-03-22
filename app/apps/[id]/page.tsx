@@ -194,11 +194,7 @@ export default function AppDetailPage() {
       setLiked(true);
       setApp((a) => a ? { ...a, likes_count: a.likes_count + 1 } : a);
       // いいねした人に+1pt
-      await supabase.from("aa_points").insert({ user_id: user.id, amount: 1, reason: `「${app?.name}」にいいね`, app_id: id });
-      // いいねされた開発者に+1pt
-      if (app) {
-        await supabase.from("aa_points").insert({ user_id: app.user_id, amount: 1, reason: `「${app.name}」がいいねされた`, app_id: id });
-      }
+      await supabase.rpc("award_like_points", { p_app_id: id, p_liker_id: user.id });
     }
   };
 
@@ -306,11 +302,11 @@ export default function AppDetailPage() {
       .eq("app_id", app.id)
       .eq("reason", `「${app.name}」へのコメント報酬`);
     if ((count ?? 0) === 0) {
-      await supabase.from("aa_points").insert({
-        user_id: commentUserId,
-        amount,
-        reason: `「${app.name}」へのコメント報酬`,
-        app_id: app.id,
+      await supabase.rpc("award_comment_reward", {
+        p_comment_user_id: commentUserId,
+        p_app_id: app.id,
+        p_amount: amount,
+        p_app_name: app.name,
       });
     }
     setRewardedComments((prev) => new Set([...prev, commentId]));

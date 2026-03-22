@@ -100,11 +100,11 @@ export default function TestersPage() {
           .eq("app_id", app.id)
           .eq("reason", `「${app.name}」のテスターに承認`);
         if ((count ?? 0) === 0) {
-          await supabase.from("aa_points").insert({
-            user_id: target.user_id,
-            amount: app.tester_reward_points,
-            reason: `「${app.name}」のテスターに承認`,
-            app_id: app.id,
+          await supabase.rpc("award_tester_points", {
+            p_tester_id: target.user_id,
+            p_app_id: app.id,
+            p_amount: app.tester_reward_points,
+            p_app_name: app.name,
           });
         }
       }
