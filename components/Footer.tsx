@@ -15,6 +15,9 @@ export default function Footer() {
           <Link href="/contact" className="hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
             運営者情報・お問い合わせ
           </Link>
+          <Link href="/feedback" className="hover:text-zinc-600 dark:hover:text-zinc-200 transition-colors">
+            不具合・フィードバック報告
+          </Link>
         </nav>
       </div>
     </footer>
