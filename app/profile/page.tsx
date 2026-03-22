@@ -48,6 +48,7 @@ export default function ProfilePage() {
   const [boostingId, setBoostingId] = useState<string | null>(null);
   const BOOST_COST = 50;
   const [memberCount, setMemberCount] = useState<number | null>(null);
+  const [appCount, setAppCount] = useState<number | null>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarError, setAvatarError] = useState("");
   const [newEmail, setNewEmail] = useState("");
@@ -105,6 +106,8 @@ export default function ProfilePage() {
       if (profileRes.data?.badge === "master") {
         supabase.from("aa_profiles").select("*", { count: "exact", head: true })
           .then(({ count }) => setMemberCount(count ?? 0));
+        supabase.from("aa_apps").select("*", { count: "exact", head: true })
+          .then(({ count }) => setAppCount(count ?? 0));
       }
 
       setLoading(false);
@@ -373,6 +376,11 @@ export default function ProfilePage() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-50 dark:bg-violet-950 text-violet-700 dark:text-violet-300 text-sm font-semibold">
               👥 会員登録数: {memberCount.toLocaleString()} 人
             </div>
+            {appCount !== null && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-semibold">
+                📱 登録アプリ数: {appCount.toLocaleString()} 件
+              </div>
+            )}
             <a href="/admin" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 text-sm font-semibold hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
               🚩 通報管理
             </a>
