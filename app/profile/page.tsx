@@ -53,6 +53,8 @@ export default function ProfilePage() {
   const [avatarError, setAvatarError] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [emailSaving, setEmailSaving] = useState(false);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const [emailMsg, setEmailMsg] = useState("");
   const [hasLiked, setHasLiked] = useState(false);
   const [hasAppliedTester, setHasAppliedTester] = useState(false);
@@ -275,6 +277,23 @@ export default function ProfilePage() {
     await supabase.from("aa_apps").delete().eq("id", appId).eq("user_id", user!.id);
     setApps((prev) => prev.filter((a) => a.id !== appId));
     setDeleteId(null);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setDeletingAccount(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    const res = await fetch("/api/delete-account", {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    if (!res.ok) {
+      alert("削除に失敗しました。時間をおいて再試行してください。");
+      setDeletingAccount(false);
+      return;
+    }
+    await supabase.auth.signOut();
+    router.push("/");
   };
 
   if (loading) return null;
@@ -583,8 +602,41 @@ export default function ProfilePage() {
       <section className="mb-8 p-5 rounded-xl border border-red-100 dark:border-red-900 bg-white dark:bg-zinc-900">
         <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">アカウント削除</h2>
         <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-3">
-          アカウントを削除する場合は、<a href="/contact" className="underline hover:text-zinc-900 dark:hover:text-zinc-100">お問い合わせ</a>からご連絡ください。投稿したアプリ・コメント等のデータも削除します。
+          アカウントを削除すると、投稿したアプリ・コメント・ポイント等すべてのデータが完全に削除されます。
         </p>
+        {!deleteAccountOpen ? (
+          <button
+            onClick={() => setDeleteAccountOpen(true)}
+            className="px-4 py-2 rounded-lg border border-red-300 dark:border-red-800 text-red-500 text-sm hover:bg-red-50 dark:hover:bg-red-950 transition-colors"
+          >
+            アカウントを削除する
+          </button>
+        ) : (
+          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 space-y-3">
+            <p className="text-sm font-semibold text-red-600 dark:text-red-400">本当に削除しますか？</p>
+            <ul className="text-xs text-red-500 dark:text-red-400 space-y-1 list-disc list-inside">
+              <li>投稿したアプリがすべて削除されます</li>
+              <li>コメント・いいね・ポイント履歴が削除されます</li>
+              <li>テスター申請・フォロー情報が削除されます</li>
+              <li>この操作は取り消せません</li>
+            </ul>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => setDeleteAccountOpen(false)}
+                className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                キャンセル
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount}
+                className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+              >
+                {deletingAccount ? "削除中..." : "完全に削除する"}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* My apps */}
