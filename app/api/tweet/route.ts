@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     .select("id, name, tagline, icon_url")
     .eq("is_hidden", false)
     .is("tweeted_at", null)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: true })
     .limit(1)
     .single();
 
