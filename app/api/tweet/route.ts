@@ -27,7 +27,7 @@ async function uploadIcon(client: TwitterApi, iconUrl: string): Promise<string |
 async function tweetWithReply(
   client: TwitterApi,
   mainText: string,
-  replyText: string,
+  replyUrl: string,
   mediaId?: string
 ): Promise<string> {
   const mainTweet = await client.v2.tweet({
@@ -35,7 +35,7 @@ async function tweetWithReply(
     ...(mediaId ? { media: { media_ids: [mediaId] } } : {}),
   });
   await client.v2.tweet({
-    text: replyText,
+    text: replyUrl,
     reply: { in_reply_to_tweet_id: mainTweet.data.id },
   });
   return mainTweet.data.id;
@@ -48,6 +48,9 @@ export async function GET(req: Request) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const { searchParams } = new URL(req.url);
+  const mode = searchParams.get("mode");
+
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -55,57 +58,84 @@ export async function GET(req: Request) {
   const client = getClient();
   const results: string[] = [];
 
-  // 1. 新着アプリ
-  const { data: newApp } = await supabase
-    .from("aa_apps")
-    .select("id, name, tagline, icon_url")
-    .eq("is_hidden", false)
-    .is("tweeted_at", null)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+  if (mode === "daily") {
+    // 21:00 JST - 掲載古い順で1件紹介
+    const { data: app } = await supabase
+      .from("aa_apps")
+      .select("id, name, tagline, icon_url")
+      .eq("is_hidden", false)
+      .is("tweeted_at", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .single();
 
-  if (newApp) {
-    try {
-      const mediaId = newApp.icon_url ? await uploadIcon(client, newApp.icon_url) : undefined;
-      const tweetId = await tweetWithReply(
-        client,
-        `\u{1F3A8} \u65B0\u7740\u30A2\u30D7\u30EA\uFF01\n\n${newApp.name}\n${newApp.tagline}`,
-        `App Atelier\u3067\u8A73\u3057\u304F\u898B\u308B\uD83D\uDC47\n${SITE_URL}/apps/${newApp.id}`,
-        mediaId
-      );
-      await supabase.from("aa_apps").update({ tweeted_at: new Date().toISOString(), tweet_id: tweetId }).eq("id", newApp.id);
-      results.push(`new: ${newApp.name}`);
-    } catch (e) {
-      results.push(`error (new): ${e}`);
-    }
-  }
-
-  // 2. ブースト
-  const { data: boost } = await supabase
-    .from("aa_boosts")
-    .select("id, app_id, aa_apps(id, name, tagline, icon_url, is_hidden)")
-    .is("tweeted_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
-
-  if (boost?.aa_apps) {
-    const app = boost.aa_apps as unknown as { id: string; name: string; tagline: string; icon_url: string | null; is_hidden: boolean };
-    if (!app.is_hidden) {
+    if (app) {
       try {
         const mediaId = app.icon_url ? await uploadIcon(client, app.icon_url) : undefined;
-        await tweetWithReply(
+        const tweetId = await tweetWithReply(
           client,
-          `\u{1F680} \u6CE8\u76EE\u30A2\u30D7\u30EA\uFF01\n\n${app.name}\n${app.tagline}`,
-          `App Atelier\u3067\u8A73\u3057\u304F\u898B\u308B\uD83D\uDC47\n${SITE_URL}/apps/${app.id}`,
+          `\u{1F4F1} \u4ECA\u65E5\u306E\u30A2\u30D7\u30EA\u7D39\u4ECB\n\n${app.name}\n${app.tagline}\n\n\u3053\u3061\u3089\u304B\u3089\u2193`,
+          `${SITE_URL}/apps/${app.id}`,
           mediaId
         );
-        await supabase.from("aa_boosts").update({ tweeted_at: new Date().toISOString() }).eq("id", boost.id);
-        results.push(`boost: ${app.name}`);
+        await supabase.from("aa_apps").update({ tweeted_at: new Date().toISOString(), tweet_id: tweetId }).eq("id", app.id);
+        results.push(`daily: ${app.name}`);
       } catch (e) {
-        results.push(`error (boost): ${e}`);
+        results.push(`error (daily): ${e}`);
+      }
+    }
+  } else {
+    // 8/12/19 JST - 新着1件（新しい順）+ ブースト1件
+    const { data: newApp } = await supabase
+      .from("aa_apps")
+      .select("id, name, tagline, icon_url")
+      .eq("is_hidden", false)
+      .is("tweeted_at", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (newApp) {
+      try {
+        const mediaId = newApp.icon_url ? await uploadIcon(client, newApp.icon_url) : undefined;
+        const tweetId = await tweetWithReply(
+          client,
+          `\u{1F3A8} \u65B0\u7740\u30A2\u30D7\u30EA\uFF01\n\n${newApp.name}\n${newApp.tagline}\n\n\u3053\u3061\u3089\u304B\u3089\u2193`,
+          `${SITE_URL}/apps/${newApp.id}`,
+          mediaId
+        );
+        await supabase.from("aa_apps").update({ tweeted_at: new Date().toISOString(), tweet_id: tweetId }).eq("id", newApp.id);
+        results.push(`new: ${newApp.name}`);
+      } catch (e) {
+        results.push(`error (new): ${e}`);
+      }
+    }
+
+    const { data: boost } = await supabase
+      .from("aa_boosts")
+      .select("id, app_id, aa_apps(id, name, tagline, icon_url, is_hidden)")
+      .is("tweeted_at", null)
+      .gt("expires_at", new Date().toISOString())
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .single();
+
+    if (boost?.aa_apps) {
+      const app = boost.aa_apps as unknown as { id: string; name: string; tagline: string; icon_url: string | null; is_hidden: boolean };
+      if (!app.is_hidden) {
+        try {
+          const mediaId = app.icon_url ? await uploadIcon(client, app.icon_url) : undefined;
+          await tweetWithReply(
+            client,
+            `\u{1F680} \u6CE8\u76EE\u30A2\u30D7\u30EA\uFF01\n\n${app.name}\n${app.tagline}\n\n\u3053\u3061\u3089\u304B\u3089\u2193`,
+            `${SITE_URL}/apps/${app.id}`,
+            mediaId
+          );
+          await supabase.from("aa_boosts").update({ tweeted_at: new Date().toISOString() }).eq("id", boost.id);
+          results.push(`boost: ${app.name}`);
+        } catch (e) {
+          results.push(`error (boost): ${e}`);
+        }
       }
     }
   }
