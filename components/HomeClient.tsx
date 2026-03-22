@@ -421,17 +421,16 @@ export default function HomeClient({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs flex-shrink-0">
-                      {app.likes_count === 0 ? (
-                        <span className="text-[11px] px-2 py-1 rounded-lg border border-rose-400 bg-rose-50 dark:bg-rose-950 text-rose-500 dark:text-rose-400 font-medium leading-tight text-center">
-                          最初の<br/>応援者に
-                        </span>
-                      ) : (
-                        <><span className="text-zinc-400">♥</span><span className="text-zinc-400">{app.likes_count}</span></>
-                      )}
+                    <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
+                      <span>♥</span><span>{app.likes_count}</span>
                     </div>
                   </div>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>
+                  {app.likes_count === 0 && (
+                    <span className="inline-block text-xs px-3 py-1 rounded-lg border border-rose-400 bg-rose-50 dark:bg-rose-950 text-rose-500 dark:text-rose-400 font-medium mb-2">
+                      最初の応援者になる
+                    </span>
+                  )}
                   <div className="flex flex-wrap gap-1">
                     {(!app.status || app.status === "released") && (
                       <span className="px-2 py-0.5 text-xs rounded-full bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300 font-medium">✓ リリース済み</span>
