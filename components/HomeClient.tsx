@@ -183,8 +183,8 @@ export default function HomeClient({
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">個人開発アプリの発見と応援</h1>
-        <p className="text-zinc-500 dark:text-zinc-400 mb-4">開発者が作ったリアルなアプリに出会い、いいねやテストで直接応援しよう</p>
+        <h1 className="text-xl font-bold mb-2 whitespace-nowrap">個人開発アプリの発見と応援</h1>
+        <p className="text-zinc-500 dark:text-zinc-400 mb-4">開発者が作ったリアルなアプリに出会い、<br />いいねやテストで直接応援しよう</p>
         {!user && (
           <div className="flex gap-3 flex-wrap">
             <Link href="/submit" className="px-5 py-2 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">
