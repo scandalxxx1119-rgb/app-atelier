@@ -423,7 +423,9 @@ export default function HomeClient({
                     </div>
                     <div className="flex items-center gap-1 text-xs flex-shrink-0">
                       {app.likes_count === 0 ? (
-                        <span className="text-[10px] text-rose-400 font-medium leading-tight text-right">最初の<br/>応援者に</span>
+                        <span className="text-[11px] px-2 py-1 rounded-lg border border-rose-400 bg-rose-50 dark:bg-rose-950 text-rose-500 dark:text-rose-400 font-medium leading-tight text-center">
+                          最初の<br/>応援者に
+                        </span>
                       ) : (
                         <><span className="text-zinc-400">♥</span><span className="text-zinc-400">{app.likes_count}</span></>
                       )}
