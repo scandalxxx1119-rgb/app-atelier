@@ -56,13 +56,19 @@ export default function ProfilePage() {
   const [emailMsg, setEmailMsg] = useState("");
   const [hasLiked, setHasLiked] = useState(false);
   const [hasAppliedTester, setHasAppliedTester] = useState(false);
+  const [hasPostedUpdate, setHasPostedUpdate] = useState(false);
+  const [hasSharedOnX, setHasSharedOnX] = useState(false);
+  const [hasCommented, setHasCommented] = useState(false);
+  const [hasBoosted, setHasBoosted] = useState(false);
+  const [hasApprovedTester, setHasApprovedTester] = useState(false);
+  const [hasRewardedComment, setHasRewardedComment] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) { router.push("/auth"); return; }
       setUser(data.user);
 
-      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes, likesRes, testerAppRes] = await Promise.all([
+      const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes, likesRes, testerAppRes, updateRes, xShareRes, commentRes, boostAllRes] = await Promise.all([
         supabase.from("aa_profiles")
           .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
           .eq("id", data.user.id).single(),
@@ -84,6 +90,10 @@ export default function ProfilePage() {
         supabase.from("aa_follows").select("id", { count: "exact" }).eq("follower_id", data.user.id),
         supabase.from("aa_likes").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
         supabase.from("aa_tester_applications").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
+        supabase.from("aa_app_updates").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
+        supabase.from("aa_points").select("id", { count: "exact", head: true }).eq("user_id", data.user.id).eq("reason", "Xでシェア"),
+        supabase.from("aa_comments").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
+        supabase.from("aa_boosts").select("id", { count: "exact", head: true }).eq("user_id", data.user.id),
       ]);
 
       setUsername(profileRes.data?.username ?? "");
@@ -108,6 +118,21 @@ export default function ProfilePage() {
       setFollowingCount(followingRes.count ?? 0);
       setHasLiked((likesRes.count ?? 0) > 0);
       setHasAppliedTester((testerAppRes.count ?? 0) > 0);
+      setHasPostedUpdate((updateRes.count ?? 0) > 0);
+      setHasSharedOnX((xShareRes.count ?? 0) > 0);
+      setHasCommented((commentRes.count ?? 0) > 0);
+      setHasBoosted((boostAllRes.count ?? 0) > 0);
+
+      // アプリIDを使った追加チェック（承認・報酬）
+      const appIds = (appsRes.data ?? []).map((a: App) => a.id);
+      if (appIds.length > 0) {
+        const [approvedRes, rewardRes] = await Promise.all([
+          supabase.from("aa_tester_applications").select("id", { count: "exact", head: true }).in("app_id", appIds).eq("status", "approved"),
+          supabase.from("aa_points").select("id", { count: "exact", head: true }).in("app_id", appIds).like("reason", "%コメント報酬%"),
+        ]);
+        setHasApprovedTester((approvedRes.count ?? 0) > 0);
+        setHasRewardedComment((rewardRes.count ?? 0) > 0);
+      }
 
       if (profileRes.data?.badge === "master") {
         supabase.from("aa_profiles").select("*", { count: "exact", head: true })
@@ -271,45 +296,107 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      {/* やることリスト（全タスク完了で非表示） */}
+      {/* やることリスト（3段階ガイド） */}
       {(() => {
-        const tasks = [
+        const guide1 = [
           { done: !!avatarUrl, label: "プロフィール写真を設定する", href: undefined },
           { done: hasLiked, label: "アプリにいいねする（+1pt）", href: "/" },
           { done: hasAppliedTester, label: "テスターに申請する", href: "/testers" },
           { done: apps.length > 0, label: "アプリを投稿する", href: "/submit" },
         ];
-        const doneCount = tasks.filter((t) => t.done).length;
-        if (doneCount === tasks.length) return null;
-        return (
-          <section className="mb-6 p-5 rounded-xl border border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950">
+        const guide2 = [
+          { done: hasPostedUpdate, label: "アップデートを投稿する（+5pt）", href: apps.length > 0 ? `/apps/${apps[0].id}` : "/" },
+          { done: followingCount > 0, label: "誰かをフォローする", href: "/" },
+          { done: hasSharedOnX, label: "アプリをXでシェアする（+10pt）", href: apps.length > 0 ? `/apps/${apps[0].id}` : "/" },
+          { done: hasCommented, label: "アプリにコメントをする", href: "/" },
+        ];
+        const guide3 = [
+          { done: hasBoosted, label: "アプリをブーストする（-50pt）", href: undefined },
+          { done: hasApprovedTester, label: "テスターを承認する", href: apps.length > 0 ? `/apps/${apps[0].id}/testers` : "/" },
+          { done: hasRewardedComment, label: "コメントに報酬を付与する", href: apps.length > 0 ? `/apps/${apps[0].id}` : "/" },
+          { done: apps.length >= 2, label: "2つ目のアプリを投稿する", href: "/submit" },
+        ];
+
+        const g1Done = guide1.filter((t) => t.done).length;
+        const g2Done = guide2.filter((t) => t.done).length;
+        const g3Done = guide3.filter((t) => t.done).length;
+        const g1Complete = g1Done === guide1.length;
+        const g2Complete = g2Done === guide2.length;
+        const g3Complete = g3Done === guide3.length;
+
+        const GuideSection = ({
+          title, tasks, doneCount, total,
+          borderCls, bgCls, barBg, barTrack, textCls, linkCls, dotCls,
+        }: {
+          title: string;
+          tasks: { done: boolean; label: string; href: string | undefined }[];
+          doneCount: number; total: number;
+          borderCls: string; bgCls: string; barBg: string; barTrack: string;
+          textCls: string; linkCls: string; dotCls: string;
+        }) => (
+          <section className={`mb-6 p-5 rounded-xl border ${borderCls} ${bgCls}`}>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold text-violet-700 dark:text-violet-300">はじめてのガイド</p>
-              <span className="text-xs text-violet-500">{doneCount} / {tasks.length} 完了</span>
+              <p className={`text-sm font-semibold ${textCls}`}>{title}</p>
+              <span className={`text-xs ${textCls} opacity-70`}>{doneCount} / {total} 完了</span>
             </div>
-            <div className="w-full bg-violet-200 dark:bg-violet-900 rounded-full h-1.5 mb-4">
-              <div
-                className="bg-violet-500 h-1.5 rounded-full transition-all"
-                style={{ width: `${(doneCount / tasks.length) * 100}%` }}
-              />
+            <div className={`w-full ${barTrack} rounded-full h-1.5 mb-4`}>
+              <div className={`${barBg} h-1.5 rounded-full transition-all`} style={{ width: `${(doneCount / total) * 100}%` }} />
             </div>
             <ul className="space-y-2">
               {tasks.map((task) => (
                 <li key={task.label} className="flex items-center gap-2">
-                  <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] ${task.done ? "border-violet-500 bg-violet-500 text-white" : "border-violet-300 dark:border-violet-700"}`}>
+                  <span className={`flex-shrink-0 w-4 h-4 rounded-full border-2 flex items-center justify-center text-[10px] ${task.done ? dotCls : "border-zinc-300 dark:border-zinc-600"}`}>
                     {task.done ? "✓" : ""}
                   </span>
                   {task.done ? (
                     <span className="text-xs text-zinc-400 line-through">{task.label}</span>
                   ) : task.href ? (
-                    <Link href={task.href} className="text-xs text-violet-600 dark:text-violet-400 hover:underline">{task.label}</Link>
+                    <Link href={task.href} className={`text-xs ${linkCls} hover:underline`}>{task.label}</Link>
                   ) : (
-                    <span className="text-xs text-violet-600 dark:text-violet-400">{task.label}</span>
+                    <span className={`text-xs ${linkCls}`}>{task.label}</span>
                   )}
                 </li>
               ))}
             </ul>
           </section>
+        );
+
+        return (
+          <>
+            {!g1Complete && (
+              <GuideSection
+                title="はじめてのガイド" tasks={guide1} doneCount={g1Done} total={guide1.length}
+                borderCls="border-violet-200 dark:border-violet-800"
+                bgCls="bg-violet-50 dark:bg-violet-950"
+                barBg="bg-violet-500" barTrack="bg-violet-200 dark:bg-violet-900"
+                textCls="text-violet-700 dark:text-violet-300"
+                linkCls="text-violet-600 dark:text-violet-400"
+                dotCls="border-violet-500 bg-violet-500 text-white"
+              />
+            )}
+            {g1Complete && !g2Complete && (
+              <GuideSection
+                title="ステップ2 — 使い込もう" tasks={guide2} doneCount={g2Done} total={guide2.length}
+                borderCls="border-blue-200 dark:border-blue-800"
+                bgCls="bg-blue-50 dark:bg-blue-950"
+                barBg="bg-blue-500" barTrack="bg-blue-200 dark:bg-blue-900"
+                textCls="text-blue-700 dark:text-blue-300"
+                linkCls="text-blue-600 dark:text-blue-400"
+                dotCls="border-blue-500 bg-blue-500 text-white"
+              />
+            )}
+            {g1Complete && g2Complete && !g3Complete && (
+              <GuideSection
+                title="ステップ3 — コミュニティを深める" tasks={guide3} doneCount={g3Done} total={guide3.length}
+                borderCls="border-amber-200 dark:border-amber-800"
+                bgCls="bg-amber-50 dark:bg-amber-950"
+                barBg="bg-amber-500" barTrack="bg-amber-200 dark:bg-amber-900"
+                textCls="text-amber-700 dark:text-amber-300"
+                linkCls="text-amber-600 dark:text-amber-400"
+                dotCls="border-amber-500 bg-amber-500 text-white"
+              />
+            )}
+          </>
         );
       })()}
 
