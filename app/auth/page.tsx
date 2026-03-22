@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { Turnstile } from "@marsidev/react-turnstile";
+import type { TurnstileInstance } from "@marsidev/react-turnstile";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -14,6 +16,8 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,6 +36,25 @@ export default function AuthPage() {
       }
 
       if (mode === "signup") {
+        // Turnstile検証
+        if (!turnstileToken) {
+          setError("ボット認証を完了してください");
+          setLoading(false);
+          return;
+        }
+        const verifyRes = await fetch("/api/verify-turnstile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token: turnstileToken }),
+        });
+        if (!verifyRes.ok) {
+          setError("ボット認証に失敗しました。もう一度お試しください");
+          turnstileRef.current?.reset();
+          setTurnstileToken(null);
+          setLoading(false);
+          return;
+        }
+
         // 予約語チェック
         const RESERVED = ["admin", "master", "administrator", "root", "support", "official", "appatelier", "app_atelier", "system", "moderator", "mod", "staff", "help"];
         const trimmedUsername = (username.trim() || email.split("@")[0]).toLowerCase();
@@ -239,6 +262,17 @@ export default function AuthPage() {
             </label>
           )}
 
+          {mode === "signup" && (
+            <Turnstile
+              ref={turnstileRef}
+              siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+              onSuccess={(token) => setTurnstileToken(token)}
+              onExpire={() => setTurnstileToken(null)}
+              onError={() => setTurnstileToken(null)}
+              options={{ theme: "auto" }}
+            />
+          )}
+
           {error && (
             <div className="px-3 py-2.5 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-900">
               <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
@@ -247,7 +281,7 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            disabled={loading || (mode === "signup" && !agreedToTerms)}
+            disabled={loading || (mode === "signup" && (!agreedToTerms || !turnstileToken))}
             className="w-full py-2.5 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 font-medium hover:opacity-80 transition-opacity disabled:opacity-50 text-sm"
           >
             {loading
