@@ -29,7 +29,7 @@ async function tweetWithReply(
   mainText: string,
   replyText: string,
   mediaId?: string
-) {
+): Promise<string> {
   const mainTweet = await client.v2.tweet({
     text: mainText,
     ...(mediaId ? { media: { media_ids: [mediaId] } } : {}),
@@ -38,6 +38,7 @@ async function tweetWithReply(
     text: replyText,
     reply: { in_reply_to_tweet_id: mainTweet.data.id },
   });
+  return mainTweet.data.id;
 }
 
 export async function GET(req: Request) {
@@ -67,13 +68,13 @@ export async function GET(req: Request) {
   if (newApp) {
     try {
       const mediaId = newApp.icon_url ? await uploadIcon(client, newApp.icon_url) : undefined;
-      await tweetWithReply(
+      const tweetId = await tweetWithReply(
         client,
         `\u{1F3A8} \u65B0\u7740\u30A2\u30D7\u30EA\uFF01\n\n${newApp.name}\n${newApp.tagline}`,
         `App Atelier\u3067\u8A73\u3057\u304F\u898B\u308B\uD83D\uDC47\n${SITE_URL}/apps/${newApp.id}`,
         mediaId
       );
-      await supabase.from("aa_apps").update({ tweeted_at: new Date().toISOString() }).eq("id", newApp.id);
+      await supabase.from("aa_apps").update({ tweeted_at: new Date().toISOString(), tweet_id: tweetId }).eq("id", newApp.id);
       results.push(`new: ${newApp.name}`);
     } catch (e) {
       results.push(`error (new): ${e}`);

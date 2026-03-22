@@ -28,6 +28,7 @@ type App = {
   status: string | null;
   tester_slots: number;
   tester_reward_points: number;
+  tweet_id: string | null;
 };
 
 type Profile = {
@@ -344,7 +345,11 @@ export default function AppDetailPage() {
 
   const handleXShare = async () => {
     const text = `【${app?.name}】${app?.tagline}\n\nApp Atelierで公開中の個人開発アプリです！気になった方はぜひチェックを👀\n\n#個人開発 #appatelier`;
-    window.open(`https://x.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(window.location.href)}`, "_blank");
+    const intentUrl = new URL("https://x.com/intent/tweet");
+    intentUrl.searchParams.set("text", text);
+    intentUrl.searchParams.set("url", window.location.href);
+    if (app?.tweet_id) intentUrl.searchParams.set("in_reply_to", app.tweet_id);
+    window.open(intentUrl.toString(), "_blank");
     // 1アプリにつき1回だけ+10pt（自分のアプリは対象外）
     if (user && app && user.id !== app.user_id) {
       const { data: existing } = await supabase.from("aa_points")
