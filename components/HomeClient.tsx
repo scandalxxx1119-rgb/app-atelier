@@ -14,6 +14,7 @@ type SimpleApp = { id: string; name: string; tagline: string; icon_url: string |
 const SORT_OPTIONS = [
   { label: "新着", value: "created_at" },
   { label: "人気", value: "likes_count" },
+  { label: "古い順", value: "oldest" },
 ];
 
 const PAGE_SIZE = 10;
@@ -104,8 +105,9 @@ export default function HomeClient({
 
     const fetchApps = async () => {
       try {
+        const rpcSort = sort === "oldest" ? "created_at" : sort;
         const { data, error } = await supabase.rpc("get_home_apps", {
-          p_sort: sort,
+          p_sort: rpcSort,
           p_tab: tab,
           p_user_id: user?.id ?? null,
           p_search: search,
@@ -113,13 +115,14 @@ export default function HomeClient({
         if (error || !data) throw new Error("rpc failed");
 
         let appsData = mapRpcRows(data as RpcRow[]);
+        if (sort === "oldest") appsData = [...appsData].reverse();
         if (selectedPlatforms.length > 0)
           appsData = appsData.filter((a) => selectedPlatforms.every((t) => a.tags?.includes(t)));
         if (selectedCategories.length > 0)
           appsData = appsData.filter((a) => selectedCategories.every((t) => a.tags?.includes(t)));
         setApps(appsData);
       } catch {
-        let query = supabase.from("aa_apps").select("*").eq("is_hidden", false).order(sort, { ascending: false }).limit(100);
+        let query = supabase.from("aa_apps").select("*").eq("is_hidden", false).order(sort === "oldest" ? "created_at" : sort, { ascending: sort === "oldest" }).limit(100);
         if (tab === "mine" && user) query = query.eq("user_id", user.id);
         if (tab === "testers") query = query.gt("tester_slots", 0);
         const { data: fallbackData } = await query;
@@ -180,8 +183,18 @@ export default function HomeClient({
   return (
     <div className="max-w-5xl mx-auto px-4 py-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">App Atelier</h1>
-        <p className="text-zinc-500 dark:text-zinc-400">個人開発者が作ったアプリを発見・応援しよう</p>
+        <h1 className="text-3xl font-bold mb-2">個人開発アプリの発見と応援</h1>
+        <p className="text-zinc-500 dark:text-zinc-400 mb-4">開発者が作ったリアルなアプリに出会い、いいねやテストで直接応援しよう</p>
+        {!user && (
+          <div className="flex gap-3 flex-wrap">
+            <Link href="/submit" className="px-5 py-2 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity">
+              アプリを投稿する
+            </Link>
+            <Link href="/testers" className="px-5 py-2 rounded-full border border-zinc-300 dark:border-zinc-600 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors">
+              テスターになる
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* ウェルカムバナー（新規ユーザー向け） */}
@@ -408,8 +421,12 @@ export default function HomeClient({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-zinc-400 flex-shrink-0">
-                      <span>♥</span><span>{app.likes_count}</span>
+                    <div className="flex items-center gap-1 text-xs flex-shrink-0">
+                      {app.likes_count === 0 ? (
+                        <span className="text-[10px] text-rose-400 font-medium">最初の応援者に</span>
+                      ) : (
+                        <><span className="text-zinc-400">♥</span><span className="text-zinc-400">{app.likes_count}</span></>
+                      )}
                     </div>
                   </div>
                   <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 mb-3">{app.tagline}</p>

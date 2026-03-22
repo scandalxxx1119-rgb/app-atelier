@@ -53,6 +53,7 @@ export default function EditAppPage() {
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
   const [description, setDescription] = useState("");
+  const [story, setStory] = useState("");
   const [url, setUrl] = useState("");
   const [appStoreUrl, setAppStoreUrl] = useState("");
   const [playStoreUrl, setPlayStoreUrl] = useState("");
@@ -87,6 +88,7 @@ export default function EditAppPage() {
       setName(app.name ?? "");
       setTagline(app.tagline ?? "");
       setDescription(app.description ?? "");
+      setStory(app.story ?? "");
       setUrl(app.url ?? "");
       setAppStoreUrl(app.app_store_url ?? "");
       setPlayStoreUrl(app.play_store_url ?? "");
@@ -159,7 +161,7 @@ export default function EditAppPage() {
       }
 
       const { error } = await supabase.from("aa_apps").update({
-        name, tagline, description,
+        name, tagline, description, story: story || null,
         url: url || null,
         app_store_url: appStoreUrl || null,
         play_store_url: playStoreUrl || null,
@@ -229,6 +231,10 @@ export default function EditAppPage() {
           <div>
             <label className="block text-sm font-medium mb-1">説明</label>
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} maxLength={3000} className={`${inputCls} resize-none`} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">開発ストーリー <span className="text-zinc-400 font-normal">（任意）</span></label>
+            <textarea value={story} onChange={(e) => setStory(e.target.value)} rows={3} maxLength={1000} placeholder="なぜこのアプリを作ったのか、開発の背景やこだわりなど..." className={`${inputCls} resize-none`} />
           </div>
         </div>
 

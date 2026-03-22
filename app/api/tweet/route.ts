@@ -58,7 +58,26 @@ export async function GET(req: Request) {
   const client = getClient();
   const results: string[] = [];
 
-  if (mode === "daily") {
+  if (mode === "weekly") {
+    // 月曜9時JST - 今週の登録件数ツイート
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const { count } = await supabase.from("aa_apps")
+      .select("*", { count: "exact", head: true })
+      .eq("is_hidden", false)
+      .gte("created_at", weekAgo);
+    if ((count ?? 0) > 0) {
+      try {
+        await tweetWithReply(
+          client,
+          `\u{1F4CA} 今週のApp Atelier\n\n新着アプリが${count}件登録されました！\n\nどんなアプリが追加されたか、ぜひチェックしてみてください\u2193`,
+          `${SITE_URL}`
+        );
+        results.push(`weekly: ${count}件`);
+      } catch (e) {
+        results.push(`error (weekly): ${e}`);
+      }
+    }
+  } else if (mode === "daily") {
     // 21:00 JST - 掲載古い順で1件紹介
     const { data: app } = await supabase
       .from("aa_apps")

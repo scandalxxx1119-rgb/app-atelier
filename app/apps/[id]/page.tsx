@@ -29,6 +29,7 @@ type App = {
   tester_slots: number;
   tester_reward_points: number;
   tweet_id: string | null;
+  story: string | null;
 };
 
 type Profile = {
@@ -655,6 +656,14 @@ export default function AppDetailPage() {
         <div className="mb-10">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">About</h2>
           <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">{app.description}</p>
+        </div>
+      )}
+
+      {/* Developer Story */}
+      {app.story && (
+        <div className="mb-10">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-3">開発ストーリー</h2>
+          <p className="text-zinc-600 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">{app.story}</p>
         </div>
       )}
 
