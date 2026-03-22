@@ -169,8 +169,15 @@ export default function ProfilePage() {
     setAvatarUploading(false);
   };
 
+  const RESERVED_USERNAMES = ["admin", "master", "administrator", "root", "support", "official", "appatelier", "app_atelier", "system", "moderator", "mod", "staff", "help"];
+
   const handleSaveProfile = async () => {
     if (!user) return;
+    const trimmed = username.trim().toLowerCase();
+    if (RESERVED_USERNAMES.includes(trimmed)) {
+      alert("そのユーザー名は使用できません");
+      return;
+    }
     setSaving(true);
     const now = canChangeUsername() && username.trim() ? new Date().toISOString() : usernameUpdatedAt;
     await supabase.from("aa_profiles").upsert({

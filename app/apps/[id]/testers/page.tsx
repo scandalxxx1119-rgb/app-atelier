@@ -90,16 +90,23 @@ export default function TestersPage() {
       return;
     }
 
-    // 承認時のみポイント付与（未承認→承認の場合だけ）
+    // 承認時のみポイント付与（DB確認で2重付与を防止）
     if (status === "approved" && app && app.tester_reward_points > 0) {
       const target = applications.find((a) => a.id === applicationId);
       if (target && target.status !== "approved") {
-        await supabase.from("aa_points").insert({
-          user_id: target.user_id,
-          amount: app.tester_reward_points,
-          reason: `「${app.name}」のテスターに承認`,
-          app_id: app.id,
-        });
+        const { count } = await supabase.from("aa_points")
+          .select("*", { count: "exact", head: true })
+          .eq("user_id", target.user_id)
+          .eq("app_id", app.id)
+          .eq("reason", `「${app.name}」のテスターに承認`);
+        if ((count ?? 0) === 0) {
+          await supabase.from("aa_points").insert({
+            user_id: target.user_id,
+            amount: app.tester_reward_points,
+            reason: `「${app.name}」のテスターに承認`,
+            app_id: app.id,
+          });
+        }
       }
     }
 
