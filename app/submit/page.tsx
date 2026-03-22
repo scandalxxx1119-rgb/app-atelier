@@ -185,7 +185,11 @@ export default function SubmitPage() {
       if (error) throw error;
       setSubmittedApp({ id: newApp.id, name, tagline });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : JSON.stringify(err);
+      const msg = err instanceof Error
+        ? err.message
+        : (typeof err === "object" && err !== null && "detail" in err)
+          ? "セッションが切れました。再度ログインしてください"
+          : "エラーが発生しました。時間をおいて再試行してください";
       setError(msg);
       setSubmitting(false);
     }
