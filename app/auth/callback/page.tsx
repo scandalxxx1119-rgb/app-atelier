@@ -24,7 +24,20 @@ function CallbackHandler() {
         { id: data.user.id, username: data.user.email?.split("@")[0] ?? "user" },
         { onConflict: "id" }
       );
-      router.push("/");
+      // 新規登録ボーナス（重複しないよう未付与の場合のみ）
+      const { count } = await supabase
+        .from("aa_points")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", data.user.id)
+        .eq("reason", "新規登録ボーナス");
+      if (count === 0) {
+        await supabase.from("aa_points").insert({
+          user_id: data.user.id,
+          amount: 10,
+          reason: "新規登録ボーナス",
+        });
+      }
+      router.push("/welcome");
     });
   }, [router, searchParams]);
 
