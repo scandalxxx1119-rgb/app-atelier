@@ -221,9 +221,13 @@ export default function AppDetailPage() {
 
     // AIコンテンツフィルター
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const modRes = await fetch("/api/moderate-comment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(session?.access_token ? { "Authorization": `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ content: comment.trim() }),
       });
       const modData = await modRes.json();
