@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { MetadataRoute } from "next";
 
-const BASE_URL = "https://app-atelier.vercel.app";
+const BASE_URL = "https://appatelier.dev";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createClient(

@@ -230,7 +230,7 @@ export default function SubmitPage() {
   if (loading) return null;
 
   if (submittedApp) {
-    const appUrl = `https://app-atelier.vercel.app/apps/${submittedApp.id}`;
+    const appUrl = `https://appatelier.dev/apps/${submittedApp.id}`;
     const xText = `【${submittedApp.name}】${submittedApp.tagline}\n\nApp Atelierで公開しました！ぜひチェックしてください✨\n\n#個人開発 #appatelier`;
     return (
       <div className="max-w-xl mx-auto px-4 py-20 text-center">

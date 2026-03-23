@@ -65,7 +65,7 @@ export default function Image() {
             color: "#52525b",
           }}
         >
-          app-atelier.vercel.app
+          appatelier.dev
         </div>
       </div>
     ),

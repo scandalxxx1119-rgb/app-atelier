@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { TwitterApi } from "twitter-api-v2";
 
-const SITE_URL = "https://app-atelier.vercel.app";
+const SITE_URL = "https://appatelier.dev";
 
 function getClient() {
   return new TwitterApi({

@@ -44,8 +44,8 @@ export async function POST(req: Request) {
     customer: customerId,
     mode: "subscription",
     line_items: [{ price: priceId, quantity: 1 }],
-    success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://app-atelier.vercel.app"}/profile?plan=success`,
-    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://app-atelier.vercel.app"}/profile`,
+    success_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://appatelier.dev"}/profile?plan=success`,
+    cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? "https://appatelier.dev"}/profile`,
     metadata: { user_id: user.id },
   });
 

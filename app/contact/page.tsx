@@ -25,8 +25,8 @@ export default function ContactPage() {
               <tr className="border-b border-zinc-100 dark:border-zinc-800">
                 <td className="py-3 pr-6 text-zinc-400 whitespace-nowrap">サービスURL</td>
                 <td className="py-3">
-                  <a href="https://app-atelier.vercel.app" className="underline text-zinc-500" target="_blank" rel="noopener noreferrer">
-                    https://app-atelier.vercel.app
+                  <a href="https://appatelier.dev" className="underline text-zinc-500" target="_blank" rel="noopener noreferrer">
+                    https://appatelier.dev
                   </a>
                 </td>
               </tr>

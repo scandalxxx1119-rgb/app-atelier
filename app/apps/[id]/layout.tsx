@@ -21,7 +21,7 @@ const getApp = cache(async (id: string) => {
   return { ...app, username: profile?.username ?? null };
 });
 
-const BASE_URL = "https://app-atelier.vercel.app";
+const BASE_URL = "https://appatelier.dev";
 
 export async function generateMetadata(
   { params }: { params: Promise<{ id: string }> }
