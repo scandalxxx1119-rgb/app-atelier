@@ -60,11 +60,13 @@ export default function RankingPage() {
 
     if (!profiles) { setLoading(false); return; }
 
+    const ownerIds = new Set(profiles.filter((p) => p.badge === "master").map((p) => p.id));
     const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
     // ユーザーランキング集計
     const pointsMap = new Map<string, number>();
     for (const row of pointsData ?? []) {
+      if (ownerIds.has(row.user_id)) continue;
       pointsMap.set(row.user_id, (pointsMap.get(row.user_id) ?? 0) + row.amount);
     }
     const uRanks: UserRank[] = [...pointsMap.entries()]
@@ -86,6 +88,7 @@ export default function RankingPage() {
     // 開発者ランキング集計
     const likesMap = new Map<string, { likes: number; apps: number }>();
     for (const row of appsData ?? []) {
+      if (ownerIds.has(row.user_id)) continue;
       const prev = likesMap.get(row.user_id) ?? { likes: 0, apps: 0 };
       likesMap.set(row.user_id, { likes: prev.likes + row.likes_count, apps: prev.apps + 1 });
     }
