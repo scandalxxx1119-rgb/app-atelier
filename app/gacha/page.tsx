@@ -5,6 +5,60 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
+const GACHA_STYLE = `
+@keyframes spin-capsule {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(90deg) scale(1.15); }
+  50%  { transform: rotate(180deg) scale(1); }
+  75%  { transform: rotate(270deg) scale(1.15); }
+  100% { transform: rotate(360deg) scale(1); }
+}
+@keyframes dot-bounce {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+  40%            { transform: translateY(-8px); opacity: 1; }
+}
+@keyframes reveal-card {
+  0%   { transform: scale(0.4) rotateY(90deg); opacity: 0; }
+  60%  { transform: scale(1.08) rotateY(-5deg); opacity: 1; }
+  80%  { transform: scale(0.97) rotateY(2deg); }
+  100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+@keyframes sparkle {
+  0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+  30%, 70%  { opacity: 1; transform: scale(1) rotate(180deg); }
+}
+@keyframes legendary-glow {
+  0%, 100% { box-shadow: 0 0 24px 4px rgba(234,179,8,0.5), 0 0 0 2px rgba(234,179,8,0.3); }
+  50%       { box-shadow: 0 0 60px 16px rgba(234,179,8,0.8), 0 0 0 4px rgba(234,179,8,0.5); }
+}
+@keyframes epic-glow {
+  0%, 100% { box-shadow: 0 0 20px 4px rgba(168,85,247,0.4); }
+  50%       { box-shadow: 0 0 48px 12px rgba(168,85,247,0.7); }
+}
+@keyframes rare-glow {
+  0%, 100% { box-shadow: 0 0 16px 4px rgba(96,165,250,0.4); }
+  50%       { box-shadow: 0 0 36px 10px rgba(96,165,250,0.6); }
+}
+.spin-capsule { animation: spin-capsule 0.7s linear infinite; display: inline-block; }
+.dot-bounce   { animation: dot-bounce 1.2s ease-in-out infinite; }
+.reveal-card  { animation: reveal-card 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+.sparkle-anim { animation: sparkle 1.4s ease-in-out infinite; }
+.legendary-glow { animation: legendary-glow 1.5s ease-in-out infinite; }
+.epic-glow      { animation: epic-glow 1.5s ease-in-out infinite; }
+.rare-glow      { animation: rare-glow 1.5s ease-in-out infinite; }
+`;
+
+const SPARKLE_POSITIONS = [
+  { top: "8%",  left: "12%",  delay: "0s",    size: "text-2xl" },
+  { top: "15%", right: "10%", delay: "0.3s",  size: "text-lg" },
+  { top: "75%", left: "8%",   delay: "0.5s",  size: "text-xl" },
+  { top: "80%", right: "12%", delay: "0.2s",  size: "text-2xl" },
+  { top: "45%", left: "4%",   delay: "0.7s",  size: "text-sm" },
+  { top: "40%", right: "4%",  delay: "0.4s",  size: "text-xl" },
+  { top: "60%", left: "20%",  delay: "0.9s",  size: "text-sm" },
+  { top: "25%", right: "22%", delay: "0.6s",  size: "text-lg" },
+];
+
 type GachaItem = {
   id: string;
   gacha_type: string;
@@ -84,6 +138,7 @@ export default function GachaPage() {
   const [points, setPoints] = useState(0);
   const [pulling, setPulling] = useState<string | null>(null);
   const [result, setResult] = useState<GachaItem | null>(null);
+  const [phase, setPhase] = useState<"idle" | "spinning" | "revealing">("idle");
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [tab, setTab] = useState<"gacha" | "inventory">("gacha");
   const [authToken, setAuthToken] = useState<string | null>(null);
@@ -129,6 +184,9 @@ export default function GachaPage() {
     if (!authToken || pulling) return;
     setPulling(type);
     setResult(null);
+    setPhase("spinning");
+
+    const startTime = Date.now();
 
     try {
       const res = await fetch("/api/gacha", {
@@ -142,9 +200,18 @@ export default function GachaPage() {
       const data = await res.json();
       if (!res.ok) {
         alert(data.error ?? "エラーが発生しました");
+        setPhase("idle");
         return;
       }
+
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 1600) {
+        await new Promise((r) => setTimeout(r, 1600 - elapsed));
+      }
+
       setResult(data.item);
+      setPhase("revealing");
+
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         await fetchPoints(session.user.id);
@@ -165,8 +232,14 @@ export default function GachaPage() {
   const colorInventory = inventory.filter((i) => i.aa_gacha_items?.category === "color");
   const appInventory = inventory.filter((i) => i.app_id);
 
+  const glowClass =
+    result?.rarity === "legendary" ? "legendary-glow" :
+    result?.rarity === "epic" ? "epic-glow" :
+    result?.rarity === "rare" ? "rare-glow" : "";
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
+      <style>{GACHA_STYLE}</style>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">ガチャ</h1>
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-zinc-100 dark:bg-zinc-800">
@@ -213,17 +286,50 @@ export default function GachaPage() {
                 disabled={!!pulling || points < g.cost}
                 className={`w-full py-2.5 rounded-xl text-white font-medium transition-opacity disabled:opacity-40 ${g.btnColor}`}
               >
-                {pulling === g.type ? "引いています..." : `${g.cost}ptで引く`}
+                {pulling === g.type ? "🎰 回転中..." : `${g.cost}ptで引く`}
               </button>
             </div>
           ))}
 
+          {/* スピナー */}
+          {phase === "spinning" && (
+            <div className="rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-10 text-center">
+              <div className="spin-capsule text-6xl mb-4">🎰</div>
+              <p className="text-zinc-400 text-sm font-medium animate-pulse">ガチャ回転中...</p>
+              <div className="flex justify-center gap-2 mt-4">
+                {[0, 1, 2].map((i) => (
+                  <div
+                    key={i}
+                    className="w-2 h-2 rounded-full bg-purple-500 dot-bounce"
+                    style={{ animationDelay: `${i * 0.2}s` }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 結果表示 */}
-          {result && (
-            <div className={`rounded-2xl border-2 shadow-lg p-6 text-center ${RARITY_STYLE[result.rarity]} bg-white dark:bg-zinc-900`}>
-              <p className={`text-xs font-bold mb-2 ${RARITY_COLOR[result.rarity]}`}>
-                {RARITY_LABEL[result.rarity]}
+          {phase === "revealing" && result && (
+            <div className={`reveal-card rounded-2xl border-2 shadow-lg p-6 text-center relative overflow-hidden ${RARITY_STYLE[result.rarity]} ${glowClass} bg-white dark:bg-zinc-900`}>
+              {/* スパークル（epic以上） */}
+              {(result.rarity === "legendary" || result.rarity === "epic") && (
+                <div className="absolute inset-0 pointer-events-none">
+                  {SPARKLE_POSITIONS.map((s, i) => (
+                    <span
+                      key={i}
+                      className={`absolute sparkle-anim ${s.size}`}
+                      style={{ top: s.top, left: s.left, right: s.right, animationDelay: s.delay }}
+                    >
+                      {result.rarity === "legendary" ? "⭐" : "✨"}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <p className={`text-xs font-bold mb-3 tracking-widest ${RARITY_COLOR[result.rarity]}`}>
+                ✦ {RARITY_LABEL[result.rarity]} ✦
               </p>
+
               {result.category === "app_card" ? (
                 <>
                   <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-3 bg-zinc-200">
