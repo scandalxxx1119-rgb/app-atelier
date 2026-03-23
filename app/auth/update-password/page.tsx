@@ -12,12 +12,13 @@ function UpdatePasswordForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState(false);
 
   useEffect(() => {
     const code = searchParams.get("code");
-    if (!code) { router.push("/auth"); return; }
+    if (!code) { setLinkError(true); return; }
     supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-      if (error) { router.push("/auth"); return; }
+      if (error) { setLinkError(true); return; }
       setReady(true);
     });
   }, [router, searchParams]);
@@ -36,6 +37,27 @@ function UpdatePasswordForm() {
       router.push("/profile");
     }
   };
+
+  if (linkError) {
+    return (
+      <div className="w-full max-w-sm text-center space-y-4">
+        <p className="text-2xl">⚠️</p>
+        <h1 className="text-lg font-bold">リンクが無効です</h1>
+        <p className="text-sm text-zinc-500">
+          パスワードリセットリンクの有効期限が切れているか、すでに使用済みです。
+        </p>
+        <a
+          href="/auth"
+          className="inline-block mt-2 px-5 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium hover:opacity-80 transition-opacity"
+        >
+          ログインページへ戻る
+        </a>
+        <p className="text-xs text-zinc-400">
+          ログインページの「パスワードを忘れた方」から再度リセットメールを送信できます。
+        </p>
+      </div>
+    );
+  }
 
   if (!ready) {
     return <p className="text-zinc-400 text-sm">認証処理中...</p>;
