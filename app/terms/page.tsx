@@ -2,7 +2,7 @@ export default function TermsPage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-12">
       <h1 className="text-2xl font-bold mb-2">利用規約</h1>
-      <p className="text-sm text-zinc-400 mb-10">最終更新日：2026年3月21日</p>
+      <p className="text-sm text-zinc-400 mb-10">最終更新日：2026年3月23日</p>
 
       <div className="space-y-8 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">
 
@@ -51,6 +51,9 @@ export default function TermsPage() {
           <p className="mb-2">
             ユーザーが投稿したコンテンツの著作権はユーザーに帰属します。
             ただし、本サービスの運営・改善・プロモーションのために必要な範囲で利用することを許諾するものとします。
+          </p>
+          <p className="mb-2">
+            運営者は、掲載されたアプリをYouTube等のSNS・動画メディアで紹介することがあります。紹介を希望しない場合は<a href="/contact" className="underline text-zinc-500">お問い合わせ</a>よりご連絡ください。
           </p>
           <p className="mb-2">
             <strong className="text-zinc-900 dark:text-zinc-100">本サービスは投稿内容の事前審査を行いません。</strong>

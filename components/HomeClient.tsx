@@ -52,6 +52,7 @@ export default function HomeClient({
   const [weeklyTop, setWeeklyTop] = useState<SimpleApp[]>([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState<SimpleApp[]>([]);
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false);
+  const [showTermsBanner, setShowTermsBanner] = useState(false);
   // サーバーデータがある場合のみ初回フェッチをスキップ
   const isInitialRender = useRef(initialApps.length > 0);
 
@@ -146,6 +147,8 @@ export default function HomeClient({
         // 登録ボーナスのみ（≤10pt）かつ未dismissならウェルカムバナー表示
         const dismissed = typeof window !== "undefined" && localStorage.getItem("welcome_banner_dismissed");
         if (!dismissed && total <= 10) setShowWelcomeBanner(true);
+        const termsDismissed = typeof window !== "undefined" && localStorage.getItem("terms_updated_20260323");
+        if (!termsDismissed) setShowTermsBanner(true);
       });
   }, [user]);
 
@@ -196,6 +199,21 @@ export default function HomeClient({
           </div>
         )}
       </div>
+
+      {/* 利用規約更新バナー */}
+      {showTermsBanner && (
+        <div className="mb-4 p-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 flex items-center justify-between gap-4">
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            📄 <strong>利用規約を更新しました（2026年3月23日）。</strong>
+            <Link href="/terms" className="underline ml-1 hover:text-zinc-900 dark:hover:text-zinc-100">変更内容を確認する</Link>
+          </p>
+          <button
+            onClick={() => { localStorage.setItem("terms_updated_20260323", "1"); setShowTermsBanner(false); }}
+            className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 text-lg flex-shrink-0"
+            aria-label="閉じる"
+          >×</button>
+        </div>
+      )}
 
       {/* ウェルカムバナー（新規ユーザー向け） */}
       {showWelcomeBanner && (
