@@ -9,22 +9,29 @@ import type { User } from "@supabase/supabase-js";
 export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isMaster, setIsMaster] = useState(false);
   const pathname = usePathname();
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       setUser(data.user);
       if (data.user) {
-        supabase.from("aa_profiles").select("avatar_url").eq("id", data.user.id).single()
-          .then(({ data: profile }) => setAvatarUrl(profile?.avatar_url ?? null));
+        supabase.from("aa_profiles").select("avatar_url, badge").eq("id", data.user.id).single()
+          .then(({ data: profile }) => {
+            setAvatarUrl(profile?.avatar_url ?? null);
+            setIsMaster(profile?.badge === "master");
+          });
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setUser(session?.user ?? null);
         if (session?.user) {
-          supabase.from("aa_profiles").select("avatar_url").eq("id", session.user.id).single()
-            .then(({ data: profile }) => setAvatarUrl(profile?.avatar_url ?? null));
+          supabase.from("aa_profiles").select("avatar_url, badge").eq("id", session.user.id).single()
+            .then(({ data: profile }) => {
+              setAvatarUrl(profile?.avatar_url ?? null);
+              setIsMaster(profile?.badge === "master");
+            });
         } else {
           setAvatarUrl(null);
         }
@@ -56,6 +63,7 @@ export default function Header() {
           {navLink("/", "ホーム")}
           {navLink("/board", "掲示板")}
           {navLink("/ranking", "ランキング")}
+          {isMaster && navLink("/gacha", "🎰ガチャ")}
           {navLink("/resources", "About")}
         </nav>
         <nav className="flex items-center gap-1 text-xs shrink-0">
