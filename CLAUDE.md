@@ -311,8 +311,12 @@
 - **【App Store審査対策①】プッシュ通知実装:** Expo Notifications + Supabase Edge Functions（いいね・コメント・テスター承認時）
 - **【App Store審査対策③】審査申請メモ欄の文言準備:** コード不要・申請時にモデレーション体制を説明する文章を用意する
 - **【App Store審査対策④】ユーザーブロック機能:** aa_blocksテーブル追加 + ブロックしたユーザーのコンテンツ非表示UI
-- iOS App Store申請中（TestFlight段階）
-- Google Play申請中
+- **iOS App Store審査中**（2026-03-23提出済み・最大48時間で結果メール）
+  - TestFlight外部テスト: 審査通過後にテスター招待リンク発行予定
+- **Google Play クローズドテスト審査中**（2026-03-23提出済み）
+  - 製品版公開条件: クローズドテスト12人以上オプトイン + 14日間継続が必要
+  - テスターオプトインURL: https://play.google.com/apps/testing/com.appatelier.app
+  - SNSでテスター募集中（現在0人）
 - マネタイズ（ポイント購入導線、月額サブスク、スポンサー枠）
 - バッジ自動付与ロジック（GOLD/SILVER/BRONZE）
 - **YouTubeチャンネル開設済み・TikTok・Instagram開設済み**（2026-03-23）。App Atelier紹介動画を21時に予約投稿済み
@@ -323,11 +327,18 @@
 
 パス: `C:\dev\app-atelier-app`（Expo SDK 54 / React Native）
 
-### ボトムナビ（5タブ）実装済み
+### ビルド状況（2026-03-23）
+- Android AAB: `https://expo.dev/artifacts/eas/vaZu18nwHknSyJGZVFN7F7.aab`（versionCode: 2）
+- iOS IPA: `https://expo.dev/artifacts/eas/jK6MXcc1YjNM2ZoDABgKa.ipa`（buildNumber: 1）
+- EAS修正内容: react-native-worklets追加（reanimated v4必須）、icon.png/adaptive-icon.pngをJPEGからPNG変換
+
+### ボトムナビ（7タブ）実装済み
 - **ホーム** (`index.tsx`): 注目アプリ（ブースト中・横スクロール）+ 新着 + 人気
 - **ゲーム** (`game.tsx`): "ゲーム"タグフィルター済みランキング
 - **App** (`applist.tsx`): iOS/Android/Mac/Windows/クロスプラットフォームをタブ切り替え
 - **Web** (`weblist.tsx`): "Web"タグフィルター済みランキング
+- **掲示板** (`board.tsx`): スレッド一覧・投稿・削除、`board/[postId].tsx` で返信
+- **ランキング** (`ranking.tsx`): likes_count順・上位3位にメダル絵文字
 - **検索** (`search.tsx`): キーワード検索 + カテゴリチップ絞り込み（300msデバウンス）
 
 ### ヘッダー
