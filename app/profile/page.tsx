@@ -598,6 +598,69 @@ export default function ProfilePage() {
         </div>
       </section>
 
+      {/* Premium plan (admin preview only) */}
+      {user?.email === "scandalxxx.1119@gmail.com" && (
+        <section className="mb-8 p-5 rounded-xl border border-amber-200 dark:border-amber-800 bg-white dark:bg-zinc-900">
+          <div className="flex items-center gap-2 mb-1">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">プレミアムプラン</h2>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-600 dark:text-amber-300">開発中</span>
+          </div>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-4">現在のプラン: <span className="font-semibold text-zinc-700 dark:text-zinc-200">無料</span></p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-4 rounded-xl border-2 border-zinc-200 dark:border-zinc-700 space-y-2">
+              <p className="font-bold text-sm">🥈 シルバー</p>
+              <p className="text-2xl font-bold">¥300<span className="text-xs font-normal text-zinc-400">/月</span></p>
+              <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+                <li>✓ プレミアムバッジ</li>
+                <li>✓ 月100pt付与</li>
+                <li>✓ 広告非表示</li>
+              </ul>
+              <button
+                onClick={async () => {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const res = await fetch("/api/stripe/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+                    body: JSON.stringify({ priceId: process.env.NEXT_PUBLIC_STRIPE_SILVER_PRICE_ID }),
+                  });
+                  const { url } = await res.json();
+                  if (url) window.location.href = url;
+                }}
+                className="w-full mt-2 py-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-sm font-medium hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+              >
+                加入する
+              </button>
+            </div>
+            <div className="p-4 rounded-xl border-2 border-amber-400 dark:border-amber-500 space-y-2 relative">
+              <span className="absolute -top-2.5 left-3 text-xs px-2 py-0.5 rounded-full bg-amber-400 text-white font-medium">人気</span>
+              <p className="font-bold text-sm">🥇 ゴールド</p>
+              <p className="text-2xl font-bold">¥980<span className="text-xs font-normal text-zinc-400">/月</span></p>
+              <ul className="text-xs text-zinc-500 dark:text-zinc-400 space-y-1">
+                <li>✓ ゴールドバッジ</li>
+                <li>✓ 月500pt付与</li>
+                <li>✓ 広告非表示</li>
+                <li>✓ 優先サポート</li>
+              </ul>
+              <button
+                onClick={async () => {
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const res = await fetch("/api/stripe/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+                    body: JSON.stringify({ priceId: process.env.NEXT_PUBLIC_STRIPE_GOLD_PRICE_ID }),
+                  });
+                  const { url } = await res.json();
+                  if (url) window.location.href = url;
+                }}
+                className="w-full mt-2 py-2 rounded-lg bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium transition-colors"
+              >
+                加入する
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Account deletion */}
       <section className="mb-8 p-5 rounded-xl border border-red-100 dark:border-red-900 bg-white dark:bg-zinc-900">
         <h2 className="text-sm font-semibold text-red-400 uppercase tracking-wide mb-2">アカウント削除</h2>
