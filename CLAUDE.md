@@ -4,7 +4,7 @@
 
 ## 概要
 - **サービス名:** App Atelier
-- **URL:** https://app-atelier.vercel.app
+- **URL:** https://appatelier.dev（旧: app-atelier.vercel.app）
 - **コンセプト:** 個人開発者がアプリを投稿・発信・応援できる日本語特化コミュニティ（Product Huntの個人開発者版）
 - **オーナー:** 佐藤涼（ハンドル: pikkaw2 / App Atelierユーザー名: app_atelier / バッジ: master）
 
@@ -292,7 +292,7 @@
 - ユーザーデータを収集または共有する？ → **はい**
 - 転送時に暗号化されるか？ → **はい**
 - アカウント作成方法 → **ユーザー名とパスワード**のみチェック
-- アカウント削除用URL → `https://app-atelier.vercel.app/contact`
+- アカウント削除用URL → `https://appatelier.dev/contact`
 - 一部データのみの削除リクエスト方法を提供するか？（任意） → **いいえ**
 
 ### ステップ3: データの種類
@@ -306,15 +306,16 @@
 
 ## 未実装・今後のTODO
 - **メール通知:** いいね・コメント・テスター承認時にSupabase Edge Functions + Resendで送信（月3,000通無料）
-- **X自動ツイート:** Vercel Cron + X API v2（Developer申請フラグ待ち）
-- **独自ドメイン取得:** 4月予定（Vercelで購入予定）
+- **X自動ツイート:** 実装済み・Vercel Cron設定済み。X_ACCESS_SECRETのタイポ（X_ACCESS_SECRE）を修正済み（2026-03-23）
+- **独自ドメイン:** `appatelier.dev` 取得・設定済み（2026-03-23）。ICANNメール認証が必要（未完了の場合は要確認）
 - **【App Store審査対策①】プッシュ通知実装:** Expo Notifications + Supabase Edge Functions（いいね・コメント・テスター承認時）
 - **【App Store審査対策③】審査申請メモ欄の文言準備:** コード不要・申請時にモデレーション体制を説明する文章を用意する
 - **【App Store審査対策④】ユーザーブロック機能:** aa_blocksテーブル追加 + ブロックしたユーザーのコンテンツ非表示UI
-- iOS App Store申請
-- Google Play本番申請
+- iOS App Store申請中（TestFlight段階）
+- Google Play申請中
 - マネタイズ（ポイント購入導線、月額サブスク、スポンサー枠）
 - バッジ自動付与ロジック（GOLD/SILVER/BRONZE）
+- **YouTubeチャンネル開設済み・TikTok・Instagram開設済み**（2026-03-23）。App Atelier紹介動画を21時に予約投稿済み
 
 ---
 
