@@ -17,15 +17,17 @@ export default function LoginBonus() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
     supabase.auth.getUser().then(async ({ data }) => {
       if (!data.user) return;
       const { data: res } = await supabase.rpc("check_login_bonus");
       if (res && res.awarded) {
         setResult(res as BonusResult);
         setVisible(true);
-        setTimeout(() => setVisible(false), 4000);
+        timer = setTimeout(() => setVisible(false), 4000);
       }
     });
+    return () => clearTimeout(timer);
   }, []);
 
   if (!visible || !result) return null;

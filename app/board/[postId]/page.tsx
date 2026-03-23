@@ -63,7 +63,7 @@ export default function BoardPostPage() {
       })));
       setLoading(false);
     });
-  }, [postId]);
+  }, [postId, router]);
 
   const handleReply = async (e: React.FormEvent) => {
     e.preventDefault();

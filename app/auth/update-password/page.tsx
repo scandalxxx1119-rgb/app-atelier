@@ -21,7 +21,7 @@ function UpdatePasswordForm() {
       if (error) { setLinkError(true); return; }
       setReady(true);
     });
-  }, [router, searchParams]);
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
