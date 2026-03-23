@@ -60,7 +60,8 @@ export default function RankingPage() {
 
     if (!profiles) { setLoading(false); return; }
 
-    const ownerIds = new Set(profiles.filter((p) => p.badge === "master").map((p) => p.id));
+    const EXCLUDED_USERNAMES = ["app_atelier"];
+    const ownerIds = new Set(profiles.filter((p) => EXCLUDED_USERNAMES.includes(p.username) || p.badge === "master").map((p) => p.id));
     const profileMap = new Map(profiles.map((p) => [p.id, p]));
 
     // ユーザーランキング集計
