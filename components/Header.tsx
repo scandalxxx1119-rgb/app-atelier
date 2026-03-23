@@ -63,7 +63,6 @@ export default function Header() {
           {navLink("/", "ホーム")}
           {navLink("/board", "掲示板")}
           {navLink("/ranking", "ランキング")}
-          {isMaster && navLink("/gacha", "🎰ガチャ")}
           {navLink("/resources", "About")}
         </nav>
         <nav className="flex items-center gap-1 text-xs shrink-0">
