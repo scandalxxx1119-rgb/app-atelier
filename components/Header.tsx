@@ -55,6 +55,7 @@ export default function Header() {
         <nav className="flex items-center gap-1 text-xs shrink-0">
           {navLink("/", "ホーム")}
           {navLink("/board", "掲示板")}
+          {navLink("/ranking", "ランキング")}
           {navLink("/resources", "About")}
         </nav>
         <nav className="flex items-center gap-1 text-xs shrink-0">

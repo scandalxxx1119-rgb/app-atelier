@@ -219,6 +219,23 @@ export default function AppDetailPage() {
       return;
     }
 
+    // AIコンテンツフィルター
+    try {
+      const modRes = await fetch("/api/moderate-comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: comment.trim() }),
+      });
+      const modData = await modRes.json();
+      if (!modData.ok) {
+        alert(`投稿できません: ${modData.reason}`);
+        setSubmitting(false);
+        return;
+      }
+    } catch {
+      // フィルターエラー時はスルー
+    }
+
     const { data } = await supabase.from("aa_comments")
       .insert({ app_id: id, user_id: user.id, content: comment.trim() })
       .select("*").single();
