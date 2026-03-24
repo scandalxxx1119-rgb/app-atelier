@@ -352,7 +352,7 @@ export default function AppDetailPage() {
   };
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = `https://appatelier.dev/apps/${id}`;
     if (navigator.share) await navigator.share({ title: app?.name, text: app?.tagline, url });
     else {
       await navigator.clipboard.writeText(url);
@@ -365,7 +365,7 @@ export default function AppDetailPage() {
     const text = `【${app?.name}】${app?.tagline}\n\nApp Atelierで公開中の個人開発アプリです！気になった方はぜひチェックを👀\n\n#個人開発 #appatelier`;
     const intentUrl = new URL("https://x.com/intent/tweet");
     intentUrl.searchParams.set("text", text);
-    intentUrl.searchParams.set("url", window.location.href);
+    intentUrl.searchParams.set("url", `https://appatelier.dev/apps/${id}`);
     if (app?.tweet_id) intentUrl.searchParams.set("in_reply_to", app.tweet_id);
     window.open(intentUrl.toString(), "_blank");
     // 1アプリにつき1回だけ+10pt（自分のアプリは対象外）

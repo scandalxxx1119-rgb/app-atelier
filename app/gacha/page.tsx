@@ -107,7 +107,7 @@ const GACHA_INFO = [
     type: "normal",
     name: "ノーマルガチャ",
     cost: 30,
-    description: "文字色・アプリカード枠色 全20色",
+    description: "プロフィール名・アプリカード枠に反映できる全20色",
     icon: "🎨",
     bg: "from-zinc-100 to-zinc-200 dark:from-zinc-800 dark:to-zinc-700",
     btnColor: "bg-zinc-700 hover:bg-zinc-600 dark:bg-zinc-300 dark:hover:bg-zinc-200 dark:text-zinc-900",
@@ -116,7 +116,7 @@ const GACHA_INFO = [
     type: "super",
     name: "スーパーガチャ",
     cost: 100,
-    description: "プロフィール飾りバッジ（レアリティあり）",
+    description: "マイページに飾れるプロフィールバッジ（レアリティあり）",
     icon: "✨",
     bg: "from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900",
     btnColor: "bg-blue-600 hover:bg-blue-500",
@@ -134,15 +134,19 @@ const GACHA_INFO = [
 
 export default function GachaPage() {
   const router = useRouter();
-  const [userBadge, setUserBadge] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [profileColor, setProfileColor] = useState<string | null>(null);
+  const [gachaBadge, setGachaBadge] = useState<string | null>(null);
   const [points, setPoints] = useState(0);
   const [pulling, setPulling] = useState<string | null>(null);
   const [result, setResult] = useState<GachaItem | null>(null);
-  const [phase, setPhase] = useState<"idle" | "spinning" | "revealing">("idle");
+  const [resultType, setResultType] = useState<string | null>(null);
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [tab, setTab] = useState<"gacha" | "inventory">("gacha");
   const [authToken, setAuthToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [applyingColor, setApplyingColor] = useState(false);
+  const [equippingBadge, setEquippingBadge] = useState(false);
 
   useEffect(() => {
     init();
@@ -152,15 +156,17 @@ export default function GachaPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) { router.push("/auth"); return; }
     setAuthToken(session.access_token);
+    setUserId(session.user.id);
 
     const { data: profile } = await supabase
       .from("aa_profiles")
-      .select("badge")
+      .select("badge, profile_color, gacha_badge")
       .eq("id", session.user.id)
       .single();
 
     if (profile?.badge !== "master") { router.push("/"); return; }
-    setUserBadge(profile.badge);
+    setProfileColor(profile?.profile_color ?? null);
+    setGachaBadge(profile?.gacha_badge ?? null);
 
     await Promise.all([fetchPoints(session.user.id), fetchInventory(session.user.id)]);
     setLoading(false);
@@ -184,7 +190,7 @@ export default function GachaPage() {
     if (!authToken || pulling) return;
     setPulling(type);
     setResult(null);
-    setPhase("spinning");
+    setResultType(null);
 
     const startTime = Date.now();
 
@@ -200,7 +206,6 @@ export default function GachaPage() {
       const data = await res.json();
       if (!res.ok) {
         alert(data.error ?? "エラーが発生しました");
-        setPhase("idle");
         return;
       }
 
@@ -210,7 +215,7 @@ export default function GachaPage() {
       }
 
       setResult(data.item);
-      setPhase("revealing");
+      setResultType(type);
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
@@ -222,20 +227,116 @@ export default function GachaPage() {
     }
   }
 
+  async function applyColor(colorValue: string) {
+    if (!userId) return;
+    setApplyingColor(true);
+    await supabase.from("aa_profiles").update({ profile_color: colorValue }).eq("id", userId);
+    setProfileColor(colorValue);
+    setApplyingColor(false);
+  }
+
+  async function equipBadge(badgeValue: string) {
+    if (!userId) return;
+    setEquippingBadge(true);
+    await supabase.from("aa_profiles").update({ gacha_badge: badgeValue }).eq("id", userId);
+    setGachaBadge(badgeValue);
+    setEquippingBadge(false);
+  }
+
+  function renderResult(item: GachaItem) {
+    const glowClass =
+      item.rarity === "legendary" ? "legendary-glow" :
+      item.rarity === "epic" ? "epic-glow" :
+      item.rarity === "rare" ? "rare-glow" : "";
+
+    return (
+      <div className={`reveal-card mt-3 rounded-2xl border-2 shadow-lg p-6 text-center relative overflow-hidden ${RARITY_STYLE[item.rarity]} ${glowClass} bg-white dark:bg-zinc-900`}>
+        <button
+          onClick={() => { setResult(null); setResultType(null); }}
+          className="absolute top-3 right-3 text-zinc-400 hover:text-zinc-600 text-sm"
+        >
+          ✕
+        </button>
+
+        {(item.rarity === "legendary" || item.rarity === "epic") && (
+          <div className="absolute inset-0 pointer-events-none">
+            {SPARKLE_POSITIONS.map((s, i) => (
+              <span
+                key={i}
+                className={`absolute sparkle-anim ${s.size}`}
+                style={{ top: s.top, left: s.left, right: s.right, animationDelay: s.delay }}
+              >
+                {item.rarity === "legendary" ? "⭐" : "✨"}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <p className={`text-xs font-bold mb-3 tracking-widest ${RARITY_COLOR[item.rarity]}`}>
+          ✦ {RARITY_LABEL[item.rarity]} ✦
+        </p>
+
+        {item.category === "app_card" ? (
+          <>
+            <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-3 bg-zinc-200">
+              {item.icon_url && <img src={item.icon_url} alt="" className="w-full h-full object-cover" />}
+            </div>
+            <p className="font-bold text-lg mb-3">{item.name}</p>
+            <Link
+              href={`/apps/${item.value}`}
+              className="inline-block px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium"
+            >
+              アプリを見る
+            </Link>
+          </>
+        ) : item.category === "color" ? (
+          <>
+            <div className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-white shadow" style={{ backgroundColor: item.value }} />
+            <p className="font-bold text-lg">{item.name}</p>
+            <p className="text-sm text-zinc-400 mt-1 mb-4">{item.value}</p>
+            <p className="text-xs text-zinc-500 mb-3">プロフィール名とアプリカード枠の色に使えます</p>
+            {profileColor === item.value ? (
+              <span className="inline-block px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-sm">設定中</span>
+            ) : (
+              <button
+                onClick={() => applyColor(item.value)}
+                disabled={applyingColor}
+                className="px-4 py-2 rounded-lg text-white text-sm font-medium disabled:opacity-50"
+                style={{ backgroundColor: item.value }}
+              >
+                {applyingColor ? "設定中..." : "このカラーをプロフィールに設定する"}
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <div className="text-6xl mb-3">{item.value}</div>
+            <p className="font-bold text-lg mb-4">{item.name}</p>
+            <p className="text-xs text-zinc-500 mb-3">マイページのプロフィールに飾れます</p>
+            {gachaBadge === item.value ? (
+              <span className="inline-block px-4 py-2 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-zinc-500 text-sm">装備中</span>
+            ) : (
+              <button
+                onClick={() => equipBadge(item.value)}
+                disabled={equippingBadge}
+                className="px-4 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium disabled:opacity-50"
+              >
+                {equippingBadge ? "装備中..." : "プロフィールに装備する"}
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh] text-zinc-400">読み込み中...</div>;
   }
 
-  if (!userBadge) return null;
-
   const badgeInventory = inventory.filter((i) => i.aa_gacha_items?.category === "badge");
   const colorInventory = inventory.filter((i) => i.aa_gacha_items?.category === "color");
   const appInventory = inventory.filter((i) => i.app_id);
-
-  const glowClass =
-    result?.rarity === "legendary" ? "legendary-glow" :
-    result?.rarity === "epic" ? "epic-glow" :
-    result?.rarity === "rare" ? "rare-glow" : "";
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
@@ -286,77 +387,35 @@ export default function GachaPage() {
                 disabled={!!pulling || points < g.cost}
                 className={`w-full py-2.5 rounded-xl text-white font-medium transition-opacity disabled:opacity-40 ${g.btnColor}`}
               >
-                {pulling === g.type ? "🎰 回転中..." : `${g.cost}ptで引く`}
+                {pulling === g.type ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="spin-capsule inline-block">🎰</span>
+                    回転中...
+                  </span>
+                ) : `${g.cost}ptで引く`}
               </button>
-            </div>
-          ))}
 
-          {/* スピナー */}
-          {phase === "spinning" && (
-            <div className="rounded-2xl border-2 border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-10 text-center">
-              <div className="spin-capsule text-6xl mb-4">🎰</div>
-              <p className="text-zinc-400 text-sm font-medium animate-pulse">ガチャ回転中...</p>
-              <div className="flex justify-center gap-2 mt-4">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-purple-500 dot-bounce"
-                    style={{ animationDelay: `${i * 0.2}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* 結果表示 */}
-          {phase === "revealing" && result && (
-            <div className={`reveal-card rounded-2xl border-2 shadow-lg p-6 text-center relative overflow-hidden ${RARITY_STYLE[result.rarity]} ${glowClass} bg-white dark:bg-zinc-900`}>
-              {/* スパークル（epic以上） */}
-              {(result.rarity === "legendary" || result.rarity === "epic") && (
-                <div className="absolute inset-0 pointer-events-none">
-                  {SPARKLE_POSITIONS.map((s, i) => (
-                    <span
-                      key={i}
-                      className={`absolute sparkle-anim ${s.size}`}
-                      style={{ top: s.top, left: s.left, right: s.right, animationDelay: s.delay }}
-                    >
-                      {result.rarity === "legendary" ? "⭐" : "✨"}
-                    </span>
-                  ))}
+              {/* このカードのスピナー */}
+              {pulling === g.type && (
+                <div className="mt-3 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center">
+                  <div className="spin-capsule text-5xl mb-3">🎰</div>
+                  <p className="text-zinc-400 text-sm font-medium animate-pulse">ガチャ回転中...</p>
+                  <div className="flex justify-center gap-2 mt-3">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="w-2 h-2 rounded-full bg-purple-500 dot-bounce"
+                        style={{ animationDelay: `${i * 0.2}s` }}
+                      />
+                    ))}
+                  </div>
                 </div>
               )}
 
-              <p className={`text-xs font-bold mb-3 tracking-widest ${RARITY_COLOR[result.rarity]}`}>
-                ✦ {RARITY_LABEL[result.rarity]} ✦
-              </p>
-
-              {result.category === "app_card" ? (
-                <>
-                  <div className="w-20 h-20 rounded-2xl overflow-hidden mx-auto mb-3 bg-zinc-200">
-                    {result.icon_url && <img src={result.icon_url} alt="" className="w-full h-full object-cover" />}
-                  </div>
-                  <p className="font-bold text-lg mb-3">{result.name}</p>
-                  <Link
-                    href={`/apps/${result.value}`}
-                    className="inline-block px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium"
-                  >
-                    アプリを見る
-                  </Link>
-                </>
-              ) : result.category === "color" ? (
-                <>
-                  <div className="w-16 h-16 rounded-full mx-auto mb-3 border-4 border-white shadow" style={{ backgroundColor: result.value }} />
-                  <p className="font-bold text-lg">{result.name}</p>
-                  <p className="text-sm text-zinc-400 mt-1">{result.value}</p>
-                </>
-              ) : (
-                <>
-                  <div className="text-6xl mb-3">{result.value}</div>
-                  <p className="font-bold text-lg">{result.name}</p>
-                </>
-              )}
+              {/* このカードの結果 */}
+              {resultType === g.type && result && renderResult(result)}
             </div>
-          )}
+          ))}
         </div>
       )}
 
@@ -365,36 +424,92 @@ export default function GachaPage() {
           {/* カラー */}
           {colorInventory.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-3 text-zinc-500 text-sm uppercase tracking-wide">カラー ({colorInventory.length}/20)</h3>
-              <div className="flex flex-wrap gap-3">
-                {colorInventory.map((i) => (
-                  <div key={i.id} className="text-center">
-                    <div
-                      className="w-10 h-10 rounded-full border-2 border-white shadow"
-                      style={{ backgroundColor: i.aa_gacha_items?.value }}
-                      title={i.aa_gacha_items?.name}
-                    />
-                    <p className="text-xs text-zinc-400 mt-1 w-10 truncate">{i.aa_gacha_items?.name}</p>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">カラー ({colorInventory.length}/20)</h3>
+                <p className="text-xs text-zinc-400">プロフィール名・アプリカード枠に反映されます</p>
               </div>
+              <div className="flex flex-wrap gap-3">
+                {colorInventory.map((i) => {
+                  const isActive = profileColor === i.aa_gacha_items?.value;
+                  return (
+                    <button
+                      key={i.id}
+                      onClick={() => i.aa_gacha_items?.value && applyColor(i.aa_gacha_items.value)}
+                      disabled={applyingColor || isActive}
+                      className="text-center group relative disabled:cursor-default"
+                      title={isActive ? "設定中" : `${i.aa_gacha_items?.name}に設定する`}
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-full border-4 shadow transition-transform group-hover:scale-110 ${isActive ? "border-zinc-900 dark:border-white scale-110" : "border-white"}`}
+                        style={{ backgroundColor: i.aa_gacha_items?.value }}
+                      />
+                      {isActive && (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-zinc-900 dark:bg-white flex items-center justify-center">
+                          <span className="text-white dark:text-zinc-900 text-[8px] font-bold">✓</span>
+                        </div>
+                      )}
+                      <p className="text-xs text-zinc-400 mt-1 w-10 truncate">{i.aa_gacha_items?.name}</p>
+                    </button>
+                  );
+                })}
+              </div>
+              {profileColor && (
+                <button
+                  onClick={async () => {
+                    if (!userId) return;
+                    await supabase.from("aa_profiles").update({ profile_color: null }).eq("id", userId);
+                    setProfileColor(null);
+                  }}
+                  className="mt-3 text-xs text-zinc-400 hover:text-zinc-600 underline"
+                >
+                  カラー設定を解除する
+                </button>
+              )}
             </div>
           )}
 
           {/* バッジ */}
           {badgeInventory.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-3 text-zinc-500 text-sm uppercase tracking-wide">バッジ ({badgeInventory.length}個)</h3>
-              <div className="flex flex-wrap gap-2">
-                {badgeInventory.map((i) => (
-                  <div key={i.id} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 bg-white dark:bg-zinc-900 ${RARITY_STYLE[i.aa_gacha_items?.rarity ?? "common"]}`}>
-                    <span className="text-xl">{i.aa_gacha_items?.value}</span>
-                    <span className={`text-xs font-medium ${RARITY_COLOR[i.aa_gacha_items?.rarity ?? "common"]}`}>
-                      {i.aa_gacha_items?.name}
-                    </span>
-                  </div>
-                ))}
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="font-semibold text-zinc-500 text-sm uppercase tracking-wide">バッジ ({badgeInventory.length}個)</h3>
+                <p className="text-xs text-zinc-400">マイページのプロフィールに飾れます</p>
               </div>
+              <div className="flex flex-wrap gap-2">
+                {badgeInventory.map((i) => {
+                  const isEquipped = gachaBadge === i.aa_gacha_items?.value;
+                  return (
+                    <button
+                      key={i.id}
+                      onClick={() => i.aa_gacha_items?.value && equipBadge(i.aa_gacha_items.value)}
+                      disabled={equippingBadge || isEquipped}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border-2 transition-all disabled:cursor-default ${
+                        isEquipped
+                          ? "border-purple-500 bg-purple-50 dark:bg-purple-950"
+                          : `bg-white dark:bg-zinc-900 hover:border-purple-300 ${RARITY_STYLE[i.aa_gacha_items?.rarity ?? "common"]}`
+                      }`}
+                    >
+                      <span className="text-xl">{i.aa_gacha_items?.value}</span>
+                      <span className={`text-xs font-medium ${RARITY_COLOR[i.aa_gacha_items?.rarity ?? "common"]}`}>
+                        {i.aa_gacha_items?.name}
+                      </span>
+                      {isEquipped && <span className="text-xs text-purple-500 font-bold">装備中</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              {gachaBadge && (
+                <button
+                  onClick={async () => {
+                    if (!userId) return;
+                    await supabase.from("aa_profiles").update({ gacha_badge: null }).eq("id", userId);
+                    setGachaBadge(null);
+                  }}
+                  className="mt-3 text-xs text-zinc-400 hover:text-zinc-600 underline"
+                >
+                  バッジ装備を外す
+                </button>
+              )}
             </div>
           )}
 

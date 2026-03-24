@@ -304,6 +304,26 @@
 
 ---
 
+## 未pushの変更（push待ち）
+
+### ガチャ機能改善（2026-03-24）
+- `app/gacha/page.tsx`: 演出をクリックしたカードの直下に表示するよう変更。カラー結果に「プロフィールに設定する」ボタン追加（説明文付き）。バッジ結果に「プロフィールに装備する」ボタン追加。所持アイテム一覧からも設定/装備/解除が可能。
+- `app/profile/page.tsx`: `profile_color`・`gacha_badge` をDBから取得・表示。ユーザー名入力欄にカラーを反映。バッジ行にガチャバッジ絵文字を表示。
+- **Supabase対応済み:** `aa_profiles` に `profile_color text` と `gacha_badge text` カラムを追加済み
+
+### Google AdSense広告実装（2026-03-24）
+- `app/layout.tsx`: AdSenseスクリプト（`ca-pub-2430173689245327`）を`<head>`に追加
+- `components/AdBanner.tsx`: 新規作成。master/platinumバッジ以外のユーザーにフッター上部で広告表示
+- `components/Footer.tsx`: `<AdBanner />`を追加
+- `next.config.ts`: CSPにAdSenseドメイン追加（script-src/connect-src/frame-src）
+- **必要なVercel環境変数:** `NEXT_PUBLIC_ADSENSE_SLOT` にAdSenseの広告ユニットスロットIDを設定（AdSenseで広告ユニット作成後に取得）
+- **AdSense審査中:** appatelier.devを追加済み・審査通過後に広告が表示される
+
+### シェアURL修正（2026-03-24）
+- `app/apps/[id]/page.tsx`: シェアボタン・XシェアボタンのURLを `window.location.href` から `https://appatelier.dev/apps/${id}` に固定。旧ドメイン経由でアクセスしても正しいURLがシェアされるように対応。
+
+---
+
 ## 未実装・今後のTODO
 - **メール通知:** いいね・コメント・テスター承認時にSupabase Edge Functions + Resendで送信（月3,000通無料）
 - **X自動ツイート:** 実装済み・Vercel Cron設定済み。X_ACCESS_SECRETのタイポ（X_ACCESS_SECRE）を修正済み（2026-03-23）

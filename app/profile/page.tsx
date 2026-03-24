@@ -32,6 +32,8 @@ export default function ProfilePage() {
   const [githubUrl, setGithubUrl] = useState("");
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [badge, setBadge] = useState<BadgeType>(null);
+  const [profileColor, setProfileColor] = useState<string | null>(null);
+  const [gachaBadge, setGachaBadge] = useState<string | null>(null);
   const [usernameUpdatedAt, setUsernameUpdatedAt] = useState<string | null>(null);
   const [apps, setApps] = useState<App[]>([]);
   const [points, setPoints] = useState(0);
@@ -72,7 +74,7 @@ export default function ProfilePage() {
 
       const [profileRes, appsRes, pointsRes, testerRes, highRatingRes, followersRes, followingRes, likesRes, testerAppRes, updateRes, xShareRes, commentRes, boostAllRes] = await Promise.all([
         supabase.from("aa_profiles")
-          .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url")
+          .select("username, badge, username_updated_at, bio, twitter_url, github_url, website_url, avatar_url, profile_color, gacha_badge")
           .eq("id", data.user.id).single(),
         supabase.from("aa_apps")
           .select("id, name, tagline, icon_url, likes_count, status")
@@ -101,6 +103,8 @@ export default function ProfilePage() {
       setUsername(profileRes.data?.username ?? "");
       setAvatarUrl(profileRes.data?.avatar_url ?? null);
       setBadge(profileRes.data?.badge ?? null);
+      setProfileColor(profileRes.data?.profile_color ?? null);
+      setGachaBadge(profileRes.data?.gacha_badge ?? null);
       setUsernameUpdatedAt(profileRes.data?.username_updated_at ?? null);
       setBio(profileRes.data?.bio ?? "");
       setTwitterUrl(profileRes.data?.twitter_url ?? "");
@@ -448,6 +452,9 @@ export default function ProfilePage() {
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide">プロフィール</h2>
           <div className="flex items-center gap-3">
             {badge && <Badge badge={badge} />}
+            {gachaBadge && (
+              <span className="text-xl" title="ガチャバッジ">{gachaBadge}</span>
+            )}
             <DevBadge appCount={apps.length} />
             <TesterBadge score={testerScore} />
             {username && (
@@ -460,7 +467,16 @@ export default function ProfilePage() {
 
         {/* Username */}
         <div>
-          <label className="block text-sm font-medium mb-1">ユーザー名</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium">ユーザー名</label>
+            {profileColor && (
+              <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+                <span className="w-3 h-3 rounded-full inline-block border border-white shadow" style={{ backgroundColor: profileColor }} />
+                ガチャカラー適用中
+                <Link href="/gacha" className="underline hover:text-zinc-600">変更</Link>
+              </span>
+            )}
+          </div>
           <input
             type="text"
             value={username}
@@ -468,6 +484,7 @@ export default function ProfilePage() {
             maxLength={30}
             disabled={!canChangeUsername()}
             className={`${inputCls} disabled:opacity-50 disabled:cursor-not-allowed`}
+            style={profileColor ? { color: profileColor } : undefined}
           />
           {!canChangeUsername() && (
             <p className="text-xs text-amber-500 mt-1">あと{daysUntilChange()}日後に変更できます（7日に1回）</p>
