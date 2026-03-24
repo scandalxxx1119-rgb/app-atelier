@@ -467,6 +467,7 @@ create policy "own blocks" on aa_blocks for all using (auth.uid() = blocker_id);
 - TikTok: タイトル（25文字以内）・説明文・ハッシュタグ10個
 - YouTube Shorts: タイトル（60文字以内・キーワード含む）・説明文・ハッシュタグ5個
 - Instagram Reels: キャプション（絵文字入り）・ハッシュタグ15個（日英混在）
+- **ハッシュタグは必ずカンマ区切り**: `#LINORIN, #AI, #LINE, #孤独, ...`
 
 ---
 
