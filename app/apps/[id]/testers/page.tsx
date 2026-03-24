@@ -110,6 +110,23 @@ export default function TestersPage() {
       }
     }
 
+    // プッシュ通知（テスターへ）
+    if (app) {
+      const target = applications.find((a) => a.id === applicationId);
+      if (target) {
+        supabase.functions.invoke("send-push", {
+          body: {
+            target_user_id: target.user_id,
+            title: status === "approved" ? "テスター承認！" : "テスター申請の結果",
+            body: status === "approved"
+              ? `「${app.name}」のテスターに承認されました`
+              : `「${app.name}」のテスター申請の審査が完了しました`,
+            data: { app_id: app.id },
+          },
+        });
+      }
+    }
+
     setApplications((prev) =>
       prev.map((a) => (a.id === applicationId ? { ...a, status } : a))
     );

@@ -306,21 +306,42 @@
 
 ## 未pushの変更（push待ち）
 
-### ガチャ機能改善（2026-03-24）
-- `app/gacha/page.tsx`: 演出をクリックしたカードの直下に表示するよう変更。カラー結果に「プロフィールに設定する」ボタン追加（説明文付き）。バッジ結果に「プロフィールに装備する」ボタン追加。所持アイテム一覧からも設定/装備/解除が可能。
-- `app/profile/page.tsx`: `profile_color`・`gacha_badge` をDBから取得・表示。ユーザー名入力欄にカラーを反映。バッジ行にガチャバッジ絵文字を表示。
-- **Supabase対応済み:** `aa_profiles` に `profile_color text` と `gacha_badge text` カラムを追加済み
+### プッシュ通知 + ブロック機能（2026-03-24）
 
-### Google AdSense広告実装（2026-03-24）
-- `app/layout.tsx`: AdSenseスクリプト（`ca-pub-2430173689245327`）を`<head>`に追加
-- `components/AdBanner.tsx`: 新規作成。master/platinumバッジ以外のユーザーにフッター上部で広告表示
-- `components/Footer.tsx`: `<AdBanner />`を追加
-- `next.config.ts`: CSPにAdSenseドメイン追加（script-src/connect-src/frame-src）
-- **必要なVercel環境変数:** `NEXT_PUBLIC_ADSENSE_SLOT` にAdSenseの広告ユニットスロットIDを設定（AdSenseで広告ユニット作成後に取得）
-- **AdSense審査中:** appatelier.devを追加済み・審査通過後に広告が表示される
+#### web (app-atelier)
+- `supabase/functions/send-push/index.ts`: 新規作成。Expo Push APIを呼び出すEdge Function。`aa_push_tokens`からトークン取得 → Expoに送信
+- `app/apps/[id]/page.tsx`: いいね時・コメント時にオーナーへプッシュ通知を送信（`supabase.functions.invoke("send-push")`）
+- `app/apps/[id]/testers/page.tsx`: テスター承認/見送り時に申請者へプッシュ通知を送信
 
-### シェアURL修正（2026-03-24）
-- `app/apps/[id]/page.tsx`: シェアボタン・XシェアボタンのURLを `window.location.href` から `https://appatelier.dev/apps/${id}` に固定。旧ドメイン経由でアクセスしても正しいURLがシェアされるように対応。
+#### mobile (app-atelier-app)
+- `app/users/[username].tsx`: ブロック/ブロック解除ボタンを追加（`aa_blocks`テーブルへinsert/delete）
+- `app/apps/[id]/index.tsx`: ブロックしたユーザーのコメントを非表示にする（`aa_blocks`から取得してフィルター）
+
+#### Supabase側で必要な作業（未対応）
+```sql
+-- aa_push_tokensテーブルはモバイルの_layoutで既に参照済み（要作成）
+create table aa_push_tokens (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  token text not null,
+  created_at timestamptz default now(),
+  unique(user_id, token)
+);
+alter table aa_push_tokens enable row level security;
+create policy "own tokens" on aa_push_tokens for all using (auth.uid() = user_id);
+
+-- aa_blocksテーブル
+create table aa_blocks (
+  id uuid primary key default gen_random_uuid(),
+  blocker_id uuid references auth.users not null,
+  blocked_id uuid references auth.users not null,
+  created_at timestamptz default now(),
+  unique(blocker_id, blocked_id)
+);
+alter table aa_blocks enable row level security;
+create policy "own blocks" on aa_blocks for all using (auth.uid() = blocker_id);
+```
+- Edge Functionのデプロイ: `supabase functions deploy send-push`
 
 ---
 

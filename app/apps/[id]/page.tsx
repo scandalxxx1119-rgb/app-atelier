@@ -196,6 +196,17 @@ export default function AppDetailPage() {
       setApp((a) => a ? { ...a, likes_count: a.likes_count + 1 } : a);
       // いいねした人に+1pt
       await supabase.rpc("award_like_points", { p_app_id: id, p_liker_id: user.id });
+      // プッシュ通知（アプリオーナーへ）
+      if (app.user_id !== user.id) {
+        supabase.functions.invoke("send-push", {
+          body: {
+            target_user_id: app.user_id,
+            title: "いいねがつきました",
+            body: `「${app.name}」にいいねされました`,
+            data: { app_id: id },
+          },
+        });
+      }
     }
   };
 
@@ -246,6 +257,17 @@ export default function AppDetailPage() {
     if (data) {
       setComments((prev) => [...prev, data as Comment]);
       setCommentProfiles((prev) => ({ ...prev, [user.id]: prev[user.id] ?? user.email ?? "?" }));
+      // プッシュ通知（アプリオーナーへ）
+      if (app && app.user_id !== user.id) {
+        supabase.functions.invoke("send-push", {
+          body: {
+            target_user_id: app.user_id,
+            title: "コメントが届きました",
+            body: `「${app.name}」に新しいコメントが届きました`,
+            data: { app_id: id },
+          },
+        });
+      }
     }
     setComment("");
     setSubmitting(false);
