@@ -197,7 +197,7 @@ export default function AppDetailPage() {
       // いいねした人に+1pt
       await supabase.rpc("award_like_points", { p_app_id: id, p_liker_id: user.id });
       // プッシュ通知（アプリオーナーへ）
-      if (app.user_id !== user.id) {
+      if (app && app.user_id !== user.id) {
         supabase.functions.invoke("send-push", {
           body: {
             target_user_id: app.user_id,
