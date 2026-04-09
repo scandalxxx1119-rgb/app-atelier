@@ -409,6 +409,12 @@ create policy "own blocks" on aa_blocks for all using (auth.uid() = blocker_id);
 トリガーID: `trig_01RDSxVz5kLysH3ztkP5nV7R`
 スケジュール: 毎日 23:00 UTC（日本時間 8:00 AM）
 
+### トラブルシューティング（2026-03-25）
+- **症状:** メールが届かない
+- **原因:** Resend APIへのcurlコマンドでHTMLをJSONに含める際のエスケープが失敗する
+- **対処:** メール送信は必ずNode.jsの`https`モジュールで行う（curlは使わない）。トリガーも修正済み。
+- **手動再送方法:** Claude Codeで `RemoteTrigger run trig_01RDSxVz5kLysH3ztkP5nV7R` を実行するか、直接Node.jsスクリプトでResend APIを叩く
+
 ### 台本生成ルール（45秒 = 約200字）
 
 **大前提: 対象は一般ユーザー**
