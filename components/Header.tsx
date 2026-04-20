@@ -57,9 +57,9 @@ export default function Header() {
   };
 
   return (
-    <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 w-full overflow-hidden">
-      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
-        <nav className="flex items-center gap-1 text-xs shrink-0">
+    <header className="border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 w-full">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center gap-2">
+        <nav className="flex items-center gap-1 text-xs flex-1 min-w-0 overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {navLink("/", "ホーム")}
           {navLink("/blog", "ブログ")}
           {navLink("/board", "掲示板")}
