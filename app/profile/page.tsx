@@ -20,6 +20,13 @@ type App = {
 
 type BadgeType = "master" | "platinum" | "gold" | "silver" | "bronze" | null;
 type FollowUser = { id: string; username: string; avatar_url: string | null; badge: string | null };
+type TesterApplication = {
+  id: string;
+  status: string;
+  created_at: string;
+  beta_url: string | null;
+  app: { id: string; name: string; icon_url: string | null } | null;
+};
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -43,6 +50,8 @@ export default function ProfilePage() {
   const [followers, setFollowers] = useState<FollowUser[]>([]);
   const [followingList, setFollowingList] = useState<FollowUser[]>([]);
   const [followTab, setFollowTab] = useState<"followers" | "following">("followers");
+  const [myTesterApplications, setMyTesterApplications] = useState<TesterApplication[]>([]);
+  const [pendingTesterCount, setPendingTesterCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -132,13 +141,23 @@ export default function ProfilePage() {
       // アプリIDを使った追加チェック（承認・報酬）
       const appIds = (appsRes.data ?? []).map((a: App) => a.id);
       if (appIds.length > 0) {
-        const [approvedRes, rewardRes] = await Promise.all([
+        const [approvedRes, rewardRes, pendingRes] = await Promise.all([
           supabase.from("aa_tester_applications").select("id", { count: "exact", head: true }).in("app_id", appIds).eq("status", "approved"),
           supabase.from("aa_points").select("id", { count: "exact", head: true }).in("app_id", appIds).like("reason", "%コメント報酬%"),
+          supabase.from("aa_tester_applications").select("id", { count: "exact", head: true }).in("app_id", appIds).eq("status", "pending"),
         ]);
         setHasApprovedTester((approvedRes.count ?? 0) > 0);
         setHasRewardedComment((rewardRes.count ?? 0) > 0);
+        setPendingTesterCount(pendingRes.count ?? 0);
       }
+
+      // 自分のテスター申請一覧
+      const { data: myApps } = await supabase
+        .from("aa_tester_applications")
+        .select("id, status, created_at, beta_url, app:aa_apps!app_id(id, name, icon_url)")
+        .eq("user_id", data.user.id)
+        .order("created_at", { ascending: false });
+      setMyTesterApplications((myApps ?? []) as unknown as TesterApplication[]);
 
       if (profileRes.data?.badge === "master") {
         supabase.from("aa_profiles").select("*", { count: "exact", head: true })
@@ -584,6 +603,63 @@ export default function ProfilePage() {
           </div>
         )}
       </section>
+
+      {/* テスター通知（開発者：未対応申請あり） */}
+      {pendingTesterCount > 0 && (
+        <section className="mb-8 p-5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                🧪 テスター申請が {pendingTesterCount} 件届いています
+              </p>
+              <p className="text-xs text-blue-500 dark:text-blue-400 mt-0.5">承認・見送りを行ってください</p>
+            </div>
+            {apps.length > 0 && (
+              <Link href={`/apps/${apps[0].id}/testers`}
+                className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-700 transition-colors">
+                確認する
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* テスター申請状況（テスター側） */}
+      {myTesterApplications.length > 0 && (
+        <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">テスター申請状況</h2>
+          <div className="space-y-3">
+            {myTesterApplications.map((a) => {
+              const statusMap = {
+                pending: { label: "審査中", cls: "bg-zinc-100 dark:bg-zinc-800 text-zinc-500" },
+                approved: { label: "承認済み ✓", cls: "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300" },
+                rejected: { label: "見送り", cls: "bg-red-100 dark:bg-red-900 text-red-500 dark:text-red-400" },
+              }[a.status] ?? { label: a.status, cls: "bg-zinc-100 text-zinc-500" };
+              return (
+                <div key={a.id} className="flex items-center gap-3 py-2 border-t border-zinc-100 dark:border-zinc-800 first:border-t-0">
+                  {a.app?.icon_url
+                    ? <img src={a.app.icon_url} alt={a.app.name} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                    : <div className="w-9 h-9 rounded-xl bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-sm font-bold text-zinc-400 flex-shrink-0">{a.app?.name?.[0] ?? "?"}</div>
+                  }
+                  <div className="flex-1 min-w-0">
+                    <Link href={`/apps/${a.app?.id}`} className="text-sm font-medium hover:underline">{a.app?.name ?? "不明なアプリ"}</Link>
+                    {a.status === "approved" && a.beta_url && (
+                      <a href={a.beta_url} target="_blank" rel="noopener noreferrer"
+                        className="block text-xs text-blue-500 hover:underline mt-0.5 truncate">
+                        🔗 テストURL を開く
+                      </a>
+                    )}
+                    {a.status === "approved" && !a.beta_url && (
+                      <p className="text-xs text-zinc-400 mt-0.5">開発者からURLが届くまでお待ちください</p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusMap.cls}`}>{statusMap.label}</span>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
 
       {/* Follow list */}
       <section className="mb-8 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">

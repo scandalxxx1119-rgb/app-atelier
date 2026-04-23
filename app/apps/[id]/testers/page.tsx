@@ -37,6 +37,7 @@ export default function TestersPage() {
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [approvalModal, setApprovalModal] = useState<{ id: string; url: string } | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -80,9 +81,11 @@ export default function TestersPage() {
     });
   }, [id, router]);
 
-  const updateStatus = async (applicationId: string, status: "approved" | "rejected") => {
+  const updateStatus = async (applicationId: string, status: "approved" | "rejected", betaUrl?: string) => {
     setUpdating(applicationId);
-    const { error } = await supabase.from("aa_tester_applications").update({ status }).eq("id", applicationId);
+    const updateData: { status: string; beta_url?: string } = { status };
+    if (status === "approved" && betaUrl) updateData.beta_url = betaUrl;
+    const { error } = await supabase.from("aa_tester_applications").update(updateData).eq("id", applicationId);
 
     if (error) {
       alert("ステータスの更新に失敗しました。時間をおいて再試行してください。");
@@ -119,7 +122,7 @@ export default function TestersPage() {
             target_user_id: target.user_id,
             title: status === "approved" ? "テスター承認！" : "テスター申請の結果",
             body: status === "approved"
-              ? `「${app.name}」のテスターに承認されました`
+              ? `「${app.name}」のテスターに承認されました${betaUrl ? `\nテストURL: ${betaUrl}` : ""}`
               : `「${app.name}」のテスター申請の審査が完了しました`,
             data: { app_id: app.id },
           },
@@ -149,6 +152,33 @@ export default function TestersPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* 承認モーダル */}
+      {approvalModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setApprovalModal(null)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">テスターを承認する</h3>
+            <p className="text-xs text-zinc-400 mb-4">TestFlightやPlayストアのベータURLを貼ると、承認通知と一緒に届きます（任意）。</p>
+            <input
+              type="url"
+              value={approvalModal.url}
+              onChange={(e) => setApprovalModal({ ...approvalModal, url: e.target.value })}
+              placeholder="https://testflight.apple.com/join/..."
+              className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mb-4"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setApprovalModal(null)}
+                className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm">
+                キャンセル
+              </button>
+              <button
+                onClick={() => { updateStatus(approvalModal.id, "approved", approvalModal.url || undefined); setApprovalModal(null); }}
+                className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors">
+                承認する
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-2">
         <Link href={`/apps/${id}`} className="text-sm text-zinc-400 hover:underline">
           ← {app?.name}
@@ -175,7 +205,7 @@ export default function TestersPage() {
                 application={a}
                 profile={profiles[a.user_id]}
                 updating={updating === a.id}
-                onApprove={() => updateStatus(a.id, "approved")}
+                onApprove={() => setApprovalModal({ id: a.id, url: "" })}
                 onReject={() => updateStatus(a.id, "rejected")}
               />
             ))}
