@@ -27,6 +27,7 @@ type TesterApplication = {
   beta_url: string | null;
   app: { id: string; name: string; icon_url: string | null } | null;
 };
+type FeedbackState = { appId: string; appName: string; rating: number; body: string } | null;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -52,6 +53,9 @@ export default function ProfilePage() {
   const [followTab, setFollowTab] = useState<"followers" | "following">("followers");
   const [myTesterApplications, setMyTesterApplications] = useState<TesterApplication[]>([]);
   const [pendingTesterCount, setPendingTesterCount] = useState(0);
+  const [feedbackModal, setFeedbackModal] = useState<FeedbackState>(null);
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [submittedFeedbacks, setSubmittedFeedbacks] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -158,6 +162,19 @@ export default function ProfilePage() {
         .eq("user_id", data.user.id)
         .order("created_at", { ascending: false });
       setMyTesterApplications((myApps ?? []) as unknown as TesterApplication[]);
+
+      // 送信済みフィードバックのappId一覧
+      const approvedAppIds = (myApps ?? [])
+        .filter((a: TesterApplication) => a.status === "approved" && a.app)
+        .map((a: TesterApplication) => a.app!.id);
+      if (approvedAppIds.length > 0) {
+        const { data: fbData } = await supabase
+          .from("aa_tester_feedback")
+          .select("app_id")
+          .eq("user_id", data.user.id)
+          .in("app_id", approvedAppIds);
+        setSubmittedFeedbacks(new Set((fbData ?? []).map((f: { app_id: string }) => f.app_id)));
+      }
 
       if (profileRes.data?.badge === "master") {
         supabase.from("aa_profiles").select("*", { count: "exact", head: true })
@@ -319,6 +336,20 @@ export default function ProfilePage() {
     router.push("/");
   };
 
+  const handleSubmitFeedback = async () => {
+    if (!feedbackModal || !user) return;
+    setSubmittingFeedback(true);
+    await supabase.from("aa_tester_feedback").upsert({
+      app_id: feedbackModal.appId,
+      user_id: user.id,
+      rating: feedbackModal.rating,
+      body: feedbackModal.body.trim() || null,
+    });
+    setSubmittedFeedbacks((prev) => new Set([...prev, feedbackModal.appId]));
+    setFeedbackModal(null);
+    setSubmittingFeedback(false);
+  };
+
   if (loading) return null;
 
   const inputCls = "w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-zinc-400 text-sm";
@@ -327,6 +358,39 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
+      {/* フィードバックモーダル */}
+      {feedbackModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={() => setFeedbackModal(null)}>
+          <div className="bg-white dark:bg-zinc-900 rounded-2xl p-6 w-full max-w-md shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-bold text-base mb-1">「{feedbackModal.appName}」へのフィードバック</h3>
+            <p className="text-xs text-zinc-400 mb-4">開発者に直接届きます。正直な感想を送りましょう。</p>
+            <div className="flex gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((s) => (
+                <button key={s} onClick={() => setFeedbackModal({ ...feedbackModal, rating: s })}
+                  className={`text-2xl transition-transform hover:scale-110 ${s <= feedbackModal.rating ? "opacity-100" : "opacity-30"}`}>
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={feedbackModal.body}
+              onChange={(e) => setFeedbackModal({ ...feedbackModal, body: e.target.value })}
+              placeholder="使ってみた感想・バグ・改善案など（任意）"
+              rows={4}
+              maxLength={1000}
+              className="w-full px-3 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 resize-none mb-4"
+            />
+            <div className="flex gap-2">
+              <button onClick={() => setFeedbackModal(null)} className="flex-1 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm">キャンセル</button>
+              <button onClick={handleSubmitFeedback} disabled={submittingFeedback || feedbackModal.rating === 0}
+                className="flex-1 py-2 rounded-lg bg-zinc-900 dark:bg-white text-white dark:text-zinc-900 text-sm font-medium disabled:opacity-50">
+                {submittingFeedback ? "送信中..." : "送信する"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold">マイページ</h1>
         <button
@@ -651,6 +715,14 @@ export default function ProfilePage() {
                     )}
                     {a.status === "approved" && !a.beta_url && (
                       <p className="text-xs text-zinc-400 mt-0.5">開発者からURLが届くまでお待ちください</p>
+                    )}
+                    {a.status === "approved" && a.app && (
+                      submittedFeedbacks.has(a.app.id)
+                        ? <p className="text-xs text-green-500 mt-0.5">✓ フィードバック送信済み</p>
+                        : <button onClick={() => setFeedbackModal({ appId: a.app!.id, appName: a.app!.name, rating: 0, body: "" })}
+                            className="text-xs text-violet-500 hover:underline mt-0.5">
+                            フィードバックを送る →
+                          </button>
                     )}
                   </div>
                   <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${statusMap.cls}`}>{statusMap.label}</span>

@@ -10,6 +10,7 @@ export default function Header() {
   const [user, setUser] = useState<User | null>(null);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isMaster, setIsMaster] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const pathname = usePathname();
 
   useEffect(() => {
@@ -21,6 +22,11 @@ export default function Header() {
             setAvatarUrl(profile?.avatar_url ?? null);
             setIsMaster(profile?.badge === "master");
           });
+        supabase.from("aa_web_notifications")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", data.user.id)
+          .eq("is_read", false)
+          .then(({ count }) => setUnreadCount(count ?? 0));
       }
     });
     const { data: listener } = supabase.auth.onAuthStateChange(
@@ -34,6 +40,7 @@ export default function Header() {
             });
         } else {
           setAvatarUrl(null);
+          setUnreadCount(0);
         }
       }
     );
@@ -79,6 +86,14 @@ export default function Header() {
               >
                 <span className="hidden sm:inline">アプリを投稿</span>
                 <span className="sm:hidden">投稿</span>
+              </Link>
+              <Link href="/notifications" className="relative flex items-center">
+                <span className="text-lg text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors">🔔</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
               </Link>
               <Link
                 href="/profile"

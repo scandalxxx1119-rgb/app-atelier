@@ -10,6 +10,11 @@ import type { App } from "@/lib/types";
 
 type RpcRow = Omit<App, "aa_profiles"> & { username?: string; badge?: string | null; is_boosted?: boolean };
 type SimpleApp = { id: string; name: string; tagline: string; icon_url: string | null; likes_count: number };
+type DevUpdate = {
+  id: string; title: string; content: string | null; version: string | null; created_at: string;
+  app: { id: string; name: string; icon_url: string | null } | null;
+  profile: { username: string; avatar_url: string | null } | null;
+};
 
 const SORT_OPTIONS = [
   { label: "新着", value: "created_at" },
@@ -39,7 +44,9 @@ export default function HomeClient({
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [sort, setSort] = useState("created_at");
-  const [tab, setTab] = useState<"all" | "testers" | "mine">("all");
+  const [tab, setTab] = useState<"all" | "testers" | "updates" | "mine">("all");
+  const [devUpdates, setDevUpdates] = useState<DevUpdate[]>([]);
+  const [updatesLoading, setUpdatesLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [platformOpen, setPlatformOpen] = useState(false);
   const [categoryOpen, setCategoryOpen] = useState(false);
@@ -137,6 +144,19 @@ export default function HomeClient({
   }, [sort, search, selectedPlatforms, selectedCategories, tab, user]);
 
   useEffect(() => { setCurrentPage(1); }, [sort, search, selectedPlatforms, selectedCategories, tab]);
+
+  useEffect(() => {
+    if (tab !== "updates") return;
+    setUpdatesLoading(true);
+    supabase.from("aa_app_updates")
+      .select("id, title, content, version, created_at, app:aa_apps!app_id(id, name, icon_url), profile:aa_profiles!user_id(username, avatar_url)")
+      .order("created_at", { ascending: false })
+      .limit(30)
+      .then(({ data }) => {
+        setDevUpdates((data ?? []) as unknown as DevUpdate[]);
+        setUpdatesLoading(false);
+      });
+  }, [tab]);
 
   useEffect(() => {
     if (!user) return;
@@ -320,10 +340,10 @@ export default function HomeClient({
 
       {/* Tabs */}
       <div className="flex items-center border-b border-zinc-200 dark:border-zinc-800 mb-4">
-        {(["all", "testers"] as const).map((t) => (
+        {(["all", "testers", "updates"] as const).map((t) => (
           <button key={t} onClick={() => { setTab(t); setSearchOpen(false); }}
             className={`px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-colors ${tab === t ? "border-b-2 border-zinc-900 dark:border-white text-zinc-900 dark:text-white" : "text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"}`}>
-            {t === "all" ? "すべて" : "🧪 テスター募集"}
+            {t === "all" ? "すべて" : t === "testers" ? "🧪 テスター募集" : "📝 進捗"}
           </button>
         ))}
         <button
@@ -400,14 +420,50 @@ export default function HomeClient({
         </div>
       </div>
 
+      {/* 進捗フィード */}
+      {tab === "updates" && (
+        <div className="space-y-4">
+          {updatesLoading ? (
+            [...Array(4)].map((_, i) => <div key={i} className="h-24 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />)
+          ) : devUpdates.length === 0 ? (
+            <div className="text-center py-20 text-zinc-400">
+              <p className="text-lg mb-2">まだ進捗投稿がありません</p>
+              <p className="text-sm">アプリ詳細ページからアップデートを投稿してみましょう</p>
+            </div>
+          ) : devUpdates.map((u) => (
+            <div key={u.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+              <div className="flex items-center gap-2 mb-3">
+                {u.profile?.avatar_url
+                  ? <img src={u.profile.avatar_url} className="w-7 h-7 rounded-full object-cover" alt="" />
+                  : <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">{u.profile?.username?.[0]?.toUpperCase() ?? "?"}</div>
+                }
+                <span className="text-sm font-medium">{u.profile?.username ?? "anonymous"}</span>
+                {u.app && (
+                  <>
+                    <span className="text-zinc-300 dark:text-zinc-600 text-xs">→</span>
+                    <Link href={`/apps/${u.app.id}`} className="flex items-center gap-1.5 hover:underline">
+                      {u.app.icon_url && <img src={u.app.icon_url} className="w-5 h-5 rounded object-cover" alt="" />}
+                      <span className="text-xs text-zinc-500 dark:text-zinc-400">{u.app.name}</span>
+                    </Link>
+                  </>
+                )}
+                <span className="text-xs text-zinc-400 ml-auto">{new Date(u.created_at).toLocaleDateString("ja-JP")}</span>
+              </div>
+              <p className="text-sm font-semibold mb-1">{u.title}{u.version && <span className="ml-2 text-xs text-zinc-400 font-normal">v{u.version}</span>}</p>
+              {u.content && <p className="text-sm text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap line-clamp-3">{u.content}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Grid */}
-      {loading ? (
+      {tab !== "updates" && loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="h-44 rounded-xl bg-zinc-100 dark:bg-zinc-800 animate-pulse" />
           ))}
         </div>
-      ) : apps.length === 0 ? (
+      ) : tab !== "updates" && apps.length === 0 ? (
         <div className="text-center py-20 text-zinc-400">
           <p className="text-lg mb-4">
             {tab === "mine" ? "まだアプリを投稿していません" : tab === "testers" ? "テスター募集中のアプリはありません" : search || selectedTags.length > 0 ? "該当するアプリが見つかりません" : "まだアプリが投稿されていません"}
@@ -416,7 +472,7 @@ export default function HomeClient({
             {tab === "mine" ? "最初のアプリを投稿する" : "アプリを投稿する"}
           </Link>
         </div>
-      ) : (
+      ) : tab !== "updates" ? (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {apps.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE).map((app) => (

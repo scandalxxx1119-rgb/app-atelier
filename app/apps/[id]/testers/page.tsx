@@ -27,6 +27,14 @@ type AppInfo = {
   tester_slots: number;
   tester_reward_points: number;
 };
+type Feedback = {
+  id: string;
+  user_id: string;
+  rating: number;
+  body: string | null;
+  created_at: string;
+  profile: { username: string; avatar_url: string | null } | null;
+};
 
 export default function TestersPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,6 +46,7 @@ export default function TestersPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [approvalModal, setApprovalModal] = useState<{ id: string; url: string } | null>(null);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
 
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data }) => {
@@ -77,6 +86,14 @@ export default function TestersPage() {
           }
         }
       }
+      // フィードバック取得
+      const { data: fbData } = await supabase
+        .from("aa_tester_feedback")
+        .select("id, user_id, rating, body, created_at, profile:aa_profiles!user_id(username, avatar_url)")
+        .eq("app_id", id)
+        .order("created_at", { ascending: false });
+      setFeedbacks((fbData ?? []) as unknown as Feedback[]);
+
       setLoading(false);
     });
   }, [id, router]);
@@ -234,7 +251,7 @@ export default function TestersPage() {
       )}
 
       {rejected.length > 0 && (
-        <section>
+        <section className="mb-8">
           <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">
             見送り（{rejected.length}）
           </h2>
@@ -248,6 +265,30 @@ export default function TestersPage() {
                 onApprove={() => updateStatus(a.id, "approved")}
                 onReject={() => updateStatus(a.id, "rejected")}
               />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {feedbacks.length > 0 && (
+        <section>
+          <h2 className="text-sm font-semibold text-zinc-400 uppercase tracking-wide mb-4">
+            フィードバック（{feedbacks.length}）
+          </h2>
+          <div className="space-y-3">
+            {feedbacks.map((f) => (
+              <div key={f.id} className="p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
+                <div className="flex items-center gap-2 mb-2">
+                  {f.profile?.avatar_url
+                    ? <img src={f.profile.avatar_url} className="w-7 h-7 rounded-full object-cover" alt="" />
+                    : <div className="w-7 h-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">{f.profile?.username?.[0]?.toUpperCase() ?? "?"}</div>
+                  }
+                  <span className="text-sm font-medium">{f.profile?.username ?? "anonymous"}</span>
+                  <span className="text-sm text-amber-400 ml-1">{"★".repeat(f.rating)}{"☆".repeat(5 - f.rating)}</span>
+                  <span className="text-xs text-zinc-400 ml-auto">{new Date(f.created_at).toLocaleDateString("ja-JP")}</span>
+                </div>
+                {f.body && <p className="text-sm text-zinc-500 dark:text-zinc-400 whitespace-pre-wrap">{f.body}</p>}
+              </div>
             ))}
           </div>
         </section>
