@@ -124,6 +124,16 @@ export default function UserProfilePage() {
       });
       setIsFollowing(true);
       setFollowersCount((n) => n + 1);
+      // Web通知（フォローされたユーザーへ）
+      supabase.from("aa_profiles").select("username").eq("id", currentUser.id).single()
+        .then(({ data: myProfile }) => {
+          supabase.from("aa_web_notifications").insert({
+            user_id: profile.id,
+            type: "follow",
+            message: myProfile ? `@${myProfile.username} があなたをフォローしました` : "新しいフォロワーがいます",
+            url: myProfile ? `/users/${myProfile.username}` : null,
+          });
+        });
     }
     setFollowLoading(false);
   };

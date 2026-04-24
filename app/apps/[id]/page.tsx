@@ -196,7 +196,7 @@ export default function AppDetailPage() {
       setApp((a) => a ? { ...a, likes_count: a.likes_count + 1 } : a);
       // いいねした人に+1pt
       await supabase.rpc("award_like_points", { p_app_id: id, p_liker_id: user.id });
-      // プッシュ通知（アプリオーナーへ）
+      // プッシュ通知 + Web通知（アプリオーナーへ）
       if (app && app.user_id !== user.id) {
         supabase.functions.invoke("send-push", {
           body: {
@@ -205,6 +205,12 @@ export default function AppDetailPage() {
             body: `「${app.name}」にいいねされました`,
             data: { app_id: id },
           },
+        });
+        supabase.from("aa_web_notifications").insert({
+          user_id: app.user_id,
+          type: "like",
+          message: `「${app.name}」にいいねされました`,
+          url: `/apps/${id}`,
         });
       }
     }
@@ -257,7 +263,7 @@ export default function AppDetailPage() {
     if (data) {
       setComments((prev) => [...prev, data as Comment]);
       setCommentProfiles((prev) => ({ ...prev, [user.id]: prev[user.id] ?? user.email ?? "?" }));
-      // プッシュ通知（アプリオーナーへ）
+      // プッシュ通知 + Web通知（アプリオーナーへ）
       if (app && app.user_id !== user.id) {
         supabase.functions.invoke("send-push", {
           body: {
@@ -266,6 +272,12 @@ export default function AppDetailPage() {
             body: `「${app.name}」に新しいコメントが届きました`,
             data: { app_id: id },
           },
+        });
+        supabase.from("aa_web_notifications").insert({
+          user_id: app.user_id,
+          type: "comment",
+          message: `「${app.name}」に新しいコメントが届きました`,
+          url: `/apps/${id}`,
         });
       }
     }
@@ -285,6 +297,15 @@ export default function AppDetailPage() {
       setApplication(data as Application);
       setTotalApplicants((n) => n + 1);
       // ポイントは承認時に付与（testers/page.tsxで処理）
+      // Web通知（開発者へ）
+      if (app) {
+        supabase.from("aa_web_notifications").insert({
+          user_id: app.user_id,
+          type: "tester_applied",
+          message: `「${app.name}」にテスター申請が届きました`,
+          url: `/apps/${id}/testers`,
+        });
+      }
     }
     setApplyOpen(false);
     setApplying(false);
